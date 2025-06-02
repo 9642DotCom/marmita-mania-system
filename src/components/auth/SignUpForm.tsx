@@ -20,12 +20,14 @@ const SignUpForm = ({ onSignUpSuccess, onBackToLogin }: SignUpFormProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  console.log('SignUpForm - Componente renderizado');
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      console.log('Iniciando cadastro de usuário...');
+      console.log('SignUpForm - Iniciando cadastro de usuário...');
       
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
@@ -38,11 +40,11 @@ const SignUpForm = ({ onSignUpSuccess, onBackToLogin }: SignUpFormProps) => {
       });
 
       if (authError) {
-        console.error('Erro no cadastro:', authError);
+        console.error('SignUpForm - Erro no cadastro:', authError);
         throw authError;
       }
 
-      console.log('Usuário criado:', authData.user);
+      console.log('SignUpForm - Usuário criado:', authData.user);
 
       if (authData.user) {
         toast({
@@ -50,15 +52,18 @@ const SignUpForm = ({ onSignUpSuccess, onBackToLogin }: SignUpFormProps) => {
           description: "Agora vamos configurar seu restaurante.",
         });
 
+        console.log('SignUpForm - Chamando onSignUpSuccess com:', authData.user);
+        
         // Passar os dados do usuário e da sessão para o próximo passo
         onSignUpSuccess({
           ...authData.user,
           email: authData.user.email,
-          session: authData.session
+          session: authData.session,
+          user_metadata: authData.user.user_metadata
         });
       }
     } catch (error: any) {
-      console.error('Erro no cadastro:', error);
+      console.error('SignUpForm - Erro no cadastro:', error);
       toast({
         title: "Erro ao criar conta",
         description: error.message,
@@ -148,7 +153,10 @@ const SignUpForm = ({ onSignUpSuccess, onBackToLogin }: SignUpFormProps) => {
         <div className="mt-4 text-center">
           <Button
             variant="link"
-            onClick={onBackToLogin}
+            onClick={() => {
+              console.log('SignUpForm - Voltando para login');
+              onBackToLogin();
+            }}
             className="text-orange-600"
           >
             Já tem uma conta? Fazer login

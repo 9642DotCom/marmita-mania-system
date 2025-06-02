@@ -18,6 +18,8 @@ const LoginForm = () => {
   const [currentStep, setCurrentStep] = useState<'login' | 'signup' | 'company-setup'>('login');
   const [newUser, setNewUser] = useState<any>(null);
 
+  console.log('LoginForm - Estado atual:', { currentStep, newUser });
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -51,20 +53,24 @@ const LoginForm = () => {
   };
 
   const handleSignUpSuccess = (user: any) => {
-    console.log('Usuário criado com sucesso, indo para configuração da empresa:', user);
+    console.log('LoginForm - handleSignUpSuccess chamado com:', user);
     setNewUser(user);
     setCurrentStep('company-setup');
+    console.log('LoginForm - Mudando para company-setup, novo estado será:', { currentStep: 'company-setup', newUser: user });
   };
 
   const handleCompanySetupComplete = () => {
-    console.log('Configuração da empresa finalizada, redirecionando para admin...');
+    console.log('LoginForm - Configuração da empresa finalizada, redirecionando para admin...');
     // Aguardar um pouco para os dados serem processados
     setTimeout(() => {
       window.location.href = '/admin';
     }, 1500);
   };
 
+  console.log('LoginForm - Renderizando com currentStep:', currentStep);
+
   if (currentStep === 'signup') {
+    console.log('LoginForm - Renderizando SignUpForm');
     return (
       <SignUpForm 
         onSignUpSuccess={handleSignUpSuccess}
@@ -74,6 +80,7 @@ const LoginForm = () => {
   }
 
   if (currentStep === 'company-setup') {
+    console.log('LoginForm - Renderizando CompanySetupForm com user:', newUser);
     return (
       <CompanySetupForm 
         user={newUser}
@@ -82,6 +89,7 @@ const LoginForm = () => {
     );
   }
 
+  console.log('LoginForm - Renderizando formulário de login');
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
@@ -150,7 +158,10 @@ const LoginForm = () => {
         <div className="mt-4 text-center">
           <Button
             variant="link"
-            onClick={() => setCurrentStep('signup')}
+            onClick={() => {
+              console.log('LoginForm - Mudando para signup');
+              setCurrentStep('signup');
+            }}
             className="text-orange-600"
           >
             Não tem conta? Criar empresa

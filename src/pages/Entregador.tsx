@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MapPin, Clock, Package, CheckCircle, LogOut } from 'lucide-react';
+import { MapPin, Clock, Package, CheckCircle, LogOut, Truck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDatabase } from '@/hooks/useDatabase';
 import { Order } from '@/types/database';
@@ -12,10 +12,6 @@ const Entregador = () => {
   const { signOut } = useAuth();
   const { useOrders, updateOrderStatus } = useDatabase();
   const { data: orders = [], isLoading } = useOrders();
-
-  const handleStartDelivery = (id: string) => {
-    updateOrderStatus.mutate({ id, status: 'saiu_entrega' });
-  };
 
   const handleCompleteDelivery = (id: string) => {
     updateOrderStatus.mutate({ id, status: 'entregue' });
@@ -31,9 +27,9 @@ const Entregador = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'saiu_entrega':
-        return <Badge variant="default">Saiu para Entrega</Badge>;
+        return <Badge variant="default" className="bg-blue-500">Em Rota</Badge>;
       case 'entregue':
-        return <Badge variant="outline">Entregue</Badge>;
+        return <Badge variant="outline" className="bg-green-500 text-white">Entregue</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -50,13 +46,23 @@ const Entregador = () => {
     );
   }
 
-  // Filtrar apenas pedidos que saíram para entrega ou foram entregues
+  // Filtrar APENAS pedidos de DELIVERY que saíram para entrega ou foram entregues
   const deliveryOrders = orders.filter((o: Order) => 
-    o.status === 'saiu_entrega' || o.status === 'entregue'
+    o.order_type === 'delivery' && (o.status === 'saiu_entrega' || o.status === 'entregue')
   );
   
   const activeDeliveries = deliveryOrders.filter((d: Order) => d.status === 'saiu_entrega');
   const completedDeliveries = deliveryOrders.filter((d: Order) => d.status === 'entregue');
+
+  console.log('📊 Estados dos pedidos do ENTREGADOR:');
+  console.log('🏍️ Deliveries ativos (saiu_entrega):', activeDeliveries.length);
+  console.log('✅ Deliveries concluídos (entregue):', completedDeliveries.length);
+  console.log('📋 Todos os pedidos delivery:', deliveryOrders.map(o => ({ 
+    id: o.id.slice(0, 8), 
+    status: o.status, 
+    type: o.order_type,
+    customer: o.customer_name
+  })));
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -64,7 +70,7 @@ const Entregador = () => {
         <div className="mb-6 flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Sistema do Entregador</h1>
-            <p className="text-gray-600">Gerencie suas entregas</p>
+            <p className="text-gray-600">Gerencie suas entregas de delivery</p>
           </div>
           <Button variant="outline" onClick={signOut}>
             <LogOut className="h-4 w-4 mr-2" />
@@ -76,9 +82,9 @@ const Entregador = () => {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
-                <Package className="h-8 w-8 text-orange-600" />
+                <Truck className="h-8 w-8 text-blue-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Entregas Ativas</p>
+                  <p className="text-sm font-medium text-gray-600">Deliveries Ativos</p>
                   <p className="text-2xl font-bold text-gray-900">{activeDeliveries.length}</p>
                 </div>
               </div>
@@ -88,7 +94,7 @@ const Entregador = () => {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
-                <Clock className="h-8 w-8 text-blue-600" />
+                <Clock className="h-8 w-8 text-orange-600" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Tempo Médio</p>
                   <p className="text-2xl font-bold text-gray-900">--</p>
@@ -112,17 +118,24 @@ const Entregador = () => {
 
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Entregas Ativas</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Truck className="h-5 w-5 text-blue-600" />
+              Deliveries Ativos ({activeDeliveries.length})
+              <span className="text-sm text-gray-500">- Apenas entregas para casa</span>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {activeDeliveries.map((delivery: Order) => (
-                <div key={delivery.id} className="border rounded-lg p-4 bg-white">
+                <div key={delivery.id} className="border-2 border-blue-300 bg-blue-50 rounded-lg p-4">
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h3 className="font-semibold text-lg">#{delivery.id.slice(-6)}</h3>
-                      <p className="text-gray-600">{delivery.customer_name || 'Cliente não informado'}</p>
-                      <p className="text-sm text-gray-500">{delivery.customer_phone}</p>
+                      <h3 className="font-semibold text-lg flex items-center gap-2">
+                        <Truck className="h-5 w-5 text-blue-600" />
+                        Delivery #{delivery.id.slice(-6)}
+                      </h3>
+                      <p className="font-medium text-gray-700">{delivery.customer_name || 'Cliente não informado'}</p>
+                      <p className="text-sm text-gray-600">{delivery.customer_phone}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-xl font-bold text-green-600">R$ {delivery.total_amount.toFixed(2)}</p>
@@ -135,16 +148,19 @@ const Entregador = () => {
                   <div className="mb-4">
                     <div className="flex items-center gap-2 mb-2">
                       <MapPin className="h-4 w-4 text-gray-500" />
-                      <p className="text-sm">
-                        {delivery.customer_address || 'Endereço não informado'}
-                      </p>
+                      <p className="text-sm font-medium text-gray-700">Endereço de Entrega:</p>
                     </div>
+                    <p className="text-sm bg-white p-3 rounded border border-gray-200">
+                      {delivery.customer_address || 'Endereço não informado'}
+                    </p>
                     {delivery.customer_address && (
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => openGPS(delivery.customer_address!)}
+                        className="mt-2"
                       >
+                        <MapPin className="h-4 w-4 mr-2" />
                         Abrir no GPS
                       </Button>
                     )}
@@ -152,7 +168,9 @@ const Entregador = () => {
 
                   {delivery.notes && (
                     <div className="mb-4">
-                      <p className="text-sm text-gray-600">Obs: {delivery.notes}</p>
+                      <p className="text-sm text-gray-600">
+                        <strong>Observações:</strong> {delivery.notes}
+                      </p>
                     </div>
                   )}
 
@@ -163,13 +181,32 @@ const Entregador = () => {
                       className="bg-green-600 hover:bg-green-700"
                       disabled={updateOrderStatus.isPending}
                     >
+                      <CheckCircle className="h-4 w-4 mr-2" />
                       Confirmar Entrega
                     </Button>
                   </div>
                 </div>
               ))}
               {activeDeliveries.length === 0 && (
-                <p className="text-center text-gray-500 py-8">Nenhuma entrega ativa no momento</p>
+                <div className="text-center py-8">
+                  <Truck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500 text-lg font-medium">Nenhum delivery ativo no momento</p>
+                  <p className="text-gray-400 text-sm mt-2">
+                    Deliveries aparecerão aqui quando estiverem prontos para entrega
+                  </p>
+                  <div className="mt-4 p-3 bg-gray-50 rounded text-xs text-left">
+                    <p className="font-medium mb-2">Status dos deliveries existentes:</p>
+                    {deliveryOrders.length === 0 ? (
+                      <p>Nenhum delivery encontrado</p>
+                    ) : (
+                      deliveryOrders.map(order => (
+                        <div key={order.id} className="mb-1">
+                          #{order.id.slice(0, 8)} - {order.status} - {order.customer_name}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           </CardContent>
@@ -178,7 +215,7 @@ const Entregador = () => {
         {completedDeliveries.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Entregas Concluídas</CardTitle>
+              <CardTitle>Deliveries Concluídos</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
@@ -187,6 +224,7 @@ const Entregador = () => {
                     <div>
                       <span className="font-medium">#{delivery.id.slice(-6)}</span>
                       <span className="text-gray-600 ml-2">{delivery.customer_name || 'Cliente não informado'}</span>
+                      <span className="text-xs text-gray-500 ml-2">({delivery.customer_address?.slice(0, 30)}...)</span>
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="text-green-600 font-medium">R$ {delivery.total_amount.toFixed(2)}</span>

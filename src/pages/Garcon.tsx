@@ -367,18 +367,15 @@ const Garcon = () => {
       table_id: order.table_id
     });
     
-    // Pedidos locais só aparecem quando status = 'saiu_entrega' (cozinha terminou)
+    // APENAS pedidos locais que saíram para entrega (cozinha terminou)
     return order.status === 'saiu_entrega' && order.order_type === 'local';
   });
 
-  const deliveryOrders = orders.filter(order => 
-    // Pedidos delivery também só quando saiu_entrega (para o motoboy)
-    order.status === 'saiu_entrega' && order.order_type === 'delivery'
-  );
+  // Pedidos delivery NÃO aparecem aqui - eles vão para o sistema do entregador
+  const deliveryOrders = [];
 
-  console.log('📊 Estados dos pedidos:');
+  console.log('📊 Estados dos pedidos do GARÇOM:');
   console.log('🍽️ Pedidos locais prontos (saiu_entrega):', readyOrders.length);
-  console.log('🏍️ Pedidos delivery em rota (saiu_entrega):', deliveryOrders.length);
   console.log('📋 Todos os pedidos:', orders.map(o => ({ 
     id: o.id.slice(0, 8), 
     status: o.status, 
@@ -394,9 +391,7 @@ const Garcon = () => {
       
       toast({
         title: "Pedido entregue! ✅",
-        description: order.order_type === 'local' 
-          ? `Pedido da Mesa ${order.tables?.number} foi entregue` 
-          : `Delivery para ${order.customer_name} foi entregue`,
+        description: `Pedido da Mesa ${order.tables?.number} foi entregue`,
       });
     } catch (error: any) {
       toast({
@@ -502,22 +497,22 @@ const Garcon = () => {
           </Card>
         </div>
 
-        {/* Pedidos Prontos para Entrega - SEMPRE exibir quando há pedidos ou para debug */}
+        {/* Pedidos Prontos para Entrega - APENAS LOCAIS */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Package className="h-5 w-5 text-green-600" />
-              Pedidos Prontos para Entrega ({readyOrders.length + deliveryOrders.length})
+              Pedidos Prontos para Entrega na Mesa ({readyOrders.length})
               <span className="text-sm text-gray-500">
-                - Debug: {orders.length} pedidos totais
+                - Apenas pedidos locais
               </span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {readyOrders.length === 0 && deliveryOrders.length === 0 ? (
+            {readyOrders.length === 0 ? (
               <div className="text-center py-8">
                 <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500 text-lg font-medium">Nenhum pedido pronto para entrega</p>
+                <p className="text-gray-500 text-lg font-medium">Nenhum pedido pronto para entrega na mesa</p>
                 <p className="text-gray-400 text-sm mt-2">
                   Pedidos aparecerão aqui quando estiverem prontos na cozinha
                 </p>
@@ -537,7 +532,7 @@ const Garcon = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Pedidos Locais Prontos */}
+                {/* Apenas Pedidos Locais Prontos */}
                 {readyOrders.map((order) => (
                   <div key={order.id} className="border-2 border-green-300 bg-green-50 rounded-lg p-4">
                     <div className="flex justify-between items-start mb-3">
@@ -548,6 +543,9 @@ const Garcon = () => {
                         </p>
                         <p className="text-sm text-gray-600">
                           Cliente: {order.customer_name || 'Não informado'}
+                        </p>
+                        <p className="text-xs text-blue-600 font-medium mt-1">
+                          📍 Local: Mesa {order.tables?.number}
                         </p>
                       </div>
                       <Badge className="bg-green-500 text-white">
@@ -578,59 +576,7 @@ const Garcon = () => {
                       size="sm"
                     >
                       <CheckCircle className="h-4 w-4 mr-2" />
-                      Entregar na Mesa
-                    </Button>
-                  </div>
-                ))}
-
-                {/* Pedidos de Delivery em Rota */}
-                {deliveryOrders.map((order) => (
-                  <div key={order.id} className="border-2 border-blue-300 bg-blue-50 rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h3 className="font-semibold text-lg flex items-center gap-2">
-                          <Truck className="h-4 w-4" />
-                          Delivery
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          Pedido #{order.id.slice(0, 8)}
-                        </p>
-                        <p className="text-sm font-medium text-gray-700">
-                          {order.customer_name}
-                        </p>
-                        <p className="text-xs text-gray-600">
-                          {order.customer_phone}
-                        </p>
-                      </div>
-                      <Badge className="bg-blue-500 text-white">
-                        Em Rota
-                      </Badge>
-                    </div>
-                    
-                    <div className="mb-3">
-                      <p className="text-sm text-gray-600 mb-1">
-                        <strong>Endereço:</strong>
-                      </p>
-                      <p className="text-xs text-gray-700 bg-white p-2 rounded border">
-                        {order.customer_address}
-                      </p>
-                      <p className="text-sm font-medium text-gray-700 mt-2">
-                        Total: R$ {order.total_amount.toFixed(2)}
-                      </p>
-                      {order.notes && (
-                        <p className="text-xs text-gray-600 mt-1">
-                          Obs: {order.notes}
-                        </p>
-                      )}
-                    </div>
-                    
-                    <Button 
-                      onClick={() => handleDeliverOrder(order)}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                      size="sm"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Confirmar Entrega
+                      Entregar na Mesa {order.tables?.number}
                     </Button>
                   </div>
                 ))}

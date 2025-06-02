@@ -9,7 +9,7 @@ interface PageHeaderProps {
 }
 
 const PageHeader = ({ title, subtitle }: PageHeaderProps) => {
-  const { signOut, profile } = useAuth();
+  const { signOut, user } = useAuth();
 
   const handleSignOut = async () => {
     await signOut();
@@ -28,9 +28,9 @@ const PageHeader = ({ title, subtitle }: PageHeaderProps) => {
               {subtitle}
             </p>
           )}
-          {profile && (
+          {user && (
             <p className="text-sm text-gray-600">
-              Bem-vindo, {profile.name}
+              Bem-vindo, {user.user_metadata?.name || user.email}
             </p>
           )}
         </div>

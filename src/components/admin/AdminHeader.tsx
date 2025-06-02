@@ -5,7 +5,7 @@ import { LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 const AdminHeader = () => {
-  const { signOut, profile } = useAuth();
+  const { signOut, user } = useAuth();
 
   const handleSignOut = async () => {
     await signOut();
@@ -21,9 +21,9 @@ const AdminHeader = () => {
             <h1 className="text-xl font-semibold text-gray-900">
               Painel Administrativo
             </h1>
-            {profile && (
+            {user && (
               <p className="text-sm text-gray-600">
-                Bem-vindo, {profile.name}
+                Bem-vindo, {user.user_metadata?.name || user.email}
               </p>
             )}
           </div>

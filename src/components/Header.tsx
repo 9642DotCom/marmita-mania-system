@@ -1,3 +1,4 @@
+
 import { ShoppingCart, Utensils } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +11,7 @@ interface HeaderProps {
 }
 
 const Header = ({ cartItemCount, onCartClick }: HeaderProps) => {
-  const { signOut, profile } = useAuth();
+  const { signOut, user } = useAuth();
 
   const handleSignOut = async () => {
     await signOut();
@@ -58,10 +59,10 @@ const Header = ({ cartItemCount, onCartClick }: HeaderProps) => {
             </Button>
           </div>
         </div>
-        {profile && (
+        {user && (
           <div className="mt-2">
             <p className="text-orange-100 text-sm">
-              Bem-vindo, {profile.name}
+              Bem-vindo, {user.user_metadata?.name || user.email}
             </p>
           </div>
         )}

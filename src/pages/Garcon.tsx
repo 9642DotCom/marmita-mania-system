@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Users, Clock, Plus, Utensils, Trash2, Minus, LogOut, Truck, UtensilsCrossed, Edit, X, Receipt, ShoppingCart } from 'lucide-react';
+import { Users, Clock, Plus, Utensils, Trash2, Minus, LogOut, Truck, UtensilsCrossed, Edit, X, Receipt, ShoppingCart, CheckCircle, Package } from 'lucide-react';
 import { useDatabase } from '@/hooks/useDatabase';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -357,6 +357,37 @@ const Garcon = () => {
   const availableTables = tables.filter(t => (t.status || 'available') === 'available');
   const occupiedTables = tables.filter(t => (t.status || 'available') === 'occupied');
   const waitingPaymentTables = tables.filter(t => (t.status || 'available') === 'waiting_payment');
+
+  // Get orders ready for delivery
+  const readyOrders = orders.filter(order => 
+    order.status === 'preparando' && order.order_type === 'local'
+  );
+
+  const deliveryOrders = orders.filter(order => 
+    order.status === 'saiu_entrega' && order.order_type === 'delivery'
+  );
+
+  const handleDeliverOrder = async (order: any) => {
+    try {
+      await updateOrderStatus.mutateAsync({
+        id: order.id,
+        status: 'entregue'
+      });
+      
+      toast({
+        title: "Pedido entregue! ✅",
+        description: order.order_type === 'local' 
+          ? `Pedido da Mesa ${order.tables?.number} foi entregue` 
+          : `Delivery para ${order.customer_name} foi entregue`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao entregar pedido",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -817,6 +848,119 @@ const Garcon = () => {
               </CardContent>
             </Card>
           </div>
+        )}
+
+        {/* Pedidos Prontos para Entrega */}
+        {(readyOrders.length > 0 || deliveryOrders.length > 0) && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5 text-green-600" />
+                Pedidos Prontos para Entrega ({readyOrders.length + deliveryOrders.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Pedidos Locais Prontos */}
+                {readyOrders.map((order) => (
+                  <div key={order.id} className="border-2 border-green-300 bg-green-50 rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="font-semibold text-lg">Mesa {order.tables?.number}</h3>
+                        <p className="text-sm text-gray-600">
+                          Pedido #{order.id.slice(0, 8)}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Cliente: {order.customer_name || 'Não informado'}
+                        </p>
+                      </div>
+                      <Badge className="bg-green-500 text-white">
+                        Pronto
+                      </Badge>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <p className="text-sm font-medium text-gray-700">
+                        Total: R$ {order.total_amount.toFixed(2)}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Pedido feito: {new Date(order.created_at).toLocaleTimeString('pt-BR', { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
+                      </p>
+                      {order.notes && (
+                        <p className="text-xs text-gray-600 mt-1">
+                          Obs: {order.notes}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <Button 
+                      onClick={() => handleDeliverOrder(order)}
+                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                      size="sm"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Entregar na Mesa
+                    </Button>
+                  </div>
+                ))}
+
+                {/* Pedidos de Delivery em Rota */}
+                {deliveryOrders.map((order) => (
+                  <div key={order.id} className="border-2 border-blue-300 bg-blue-50 rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="font-semibold text-lg flex items-center gap-2">
+                          <Truck className="h-4 w-4" />
+                          Delivery
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          Pedido #{order.id.slice(0, 8)}
+                        </p>
+                        <p className="text-sm font-medium text-gray-700">
+                          {order.customer_name}
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          {order.customer_phone}
+                        </p>
+                      </div>
+                      <Badge className="bg-blue-500 text-white">
+                        Em Rota
+                      </Badge>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <p className="text-sm text-gray-600 mb-1">
+                        <strong>Endereço:</strong>
+                      </p>
+                      <p className="text-xs text-gray-700 bg-white p-2 rounded border">
+                        {order.customer_address}
+                      </p>
+                      <p className="text-sm font-medium text-gray-700 mt-2">
+                        Total: R$ {order.total_amount.toFixed(2)}
+                      </p>
+                      {order.notes && (
+                        <p className="text-xs text-gray-600 mt-1">
+                          Obs: {order.notes}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <Button 
+                      onClick={() => handleDeliverOrder(order)}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                      size="sm"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Confirmar Entrega
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>

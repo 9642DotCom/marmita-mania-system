@@ -1,401 +1,202 @@
 
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Building2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from '@/hooks/use-toast';
 
 const RestaurantAuth = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [restaurantName, setRestaurantName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
   const [ownerName, setOwnerName] = useState('');
+  const [restaurantName, setRestaurantName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  
+  const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
-  const { profile } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setIsLoading(true);
 
     try {
-      console.log('Iniciando login...');
+      const { error } = await signIn(loginEmail, loginPassword);
       
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
-      console.log('Login realizado com sucesso:', data);
-
-      toast({
-        title: "Login realizado com sucesso!",
-        description: "Redirecionando...",
-      });
-
-      // Aguardar um pouco para o perfil ser carregado
-      setTimeout(() => {
-        console.log('Redirecionando baseado no perfil...');
+      if (error) {
+        toast({
+          title: "Erro no login",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Login realizado com sucesso!",
+          description: "Redirecionando...",
+        });
         
-        // Detectar role baseado no email se não tiver perfil ainda
-        const isAdmin = email.includes('admin') || email.includes('rodrigo') || email === 'rodrigo_nunes.182@hotmail.com';
-        const role = profile?.role || (isAdmin ? 'admin' : 'garcon');
-        
-        console.log('Role detectado:', role);
-        
-        switch (role) {
-          case 'admin':
-            navigate('/admin', { replace: true });
-            break;
-          case 'entregador':
-            navigate('/entregador', { replace: true });
-            break;
-          case 'caixa':
-            navigate('/caixa', { replace: true });
-            break;
-          case 'cozinha':
-            navigate('/cozinha', { replace: true });
-            break;
-          case 'garcon':
-            navigate('/garcon', { replace: true });
-            break;
-          default:
-            navigate('/', { replace: true });
-            break;
-        }
-      }, 1000);
-
+        // O redirecionamento será feito pelo AuthLayout
+      }
     } catch (error: any) {
-      console.error('Erro no login:', error);
       toast({
         title: "Erro no login",
-        description: error.message,
-        variant: "destructive",
+        description: error.message || "Ocorreu um erro inesperado",
+        variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setIsLoading(true);
 
     try {
-      // 1. Criar usuário primeiro
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name: ownerName,
-            restaurant_name: restaurantName,
-          }
-        }
+      const { error } = await signUp(signupEmail, signupPassword, {
+        ownerName,
+        restaurantName,
+        phone,
+        address
       });
-
-      if (authError) throw authError;
-
-      if (authData.user) {
-        // 2. Aguardar um pouco para garantir que o usuário foi criado
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // 3. Fazer login temporário para ter acesso autenticado
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (signInError) throw signInError;
-
-        // 4. Criar empresa (agora com usuário autenticado)
-        const { data: companyData, error: companyError } = await supabase
-          .from('companies')
-          .insert([
-            {
-              name: restaurantName,
-              email: email,
-              phone: phone || null,
-              address: address || null,
-              owner_id: authData.user.id,
-            }
-          ])
-          .select()
-          .single();
-
-        if (companyError) throw companyError;
-
-        // 5. Criar perfil do usuário vinculado à empresa
-        const { error: profileError } = await supabase
-          .from('profiles' as any)
-          .insert([
-            {
-              id: authData.user.id,
-              company_id: companyData.id,
-              name: ownerName,
-              email: email,
-              role: 'admin',
-            }
-          ]);
-
-        if (profileError) throw profileError;
-
+      
+      if (error) {
         toast({
-          title: "Restaurante cadastrado com sucesso!",
-          description: "Sua conta foi criada. Redirecionando para o painel admin...",
+          title: "Erro no cadastro",
+          description: error.message,
+          variant: "destructive"
         });
-
-        // Redirecionar para admin após cadastro bem-sucedido
-        navigate('/admin');
+      } else {
+        toast({
+          title: "Cadastro realizado com sucesso!",
+          description: "Redirecionando...",
+        });
       }
     } catch (error: any) {
-      console.error('Erro detalhado:', error);
       toast({
-        title: "Erro ao criar conta",
-        description: error.message,
-        variant: "destructive",
+        title: "Erro no cadastro",
+        description: error.message || "Ocorreu um erro inesperado",
+        variant: "destructive"
       });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-red-50 p-4">
-      <Card className="w-full max-w-md shadow-xl">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="bg-gradient-to-r from-orange-500 to-red-500 p-3 rounded-full">
-              <Building2 className="h-8 w-8 text-white" />
-            </div>
-          </div>
-          <CardTitle className="text-2xl text-gray-800">
-            {isSignUp ? 'Cadastrar Restaurante' : 'Login do Restaurante'}
-          </CardTitle>
-          <p className="text-gray-600">
-            {isSignUp 
-              ? 'Cadastre seu restaurante e comece a gerenciar seus pedidos'
-              : 'Entre na sua conta para acessar o painel do seu restaurante'
-            }
-          </p>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="text-center text-2xl font-bold">Sistema de Restaurante</CardTitle>
         </CardHeader>
-        
         <CardContent>
-          <form onSubmit={isSignUp ? handleSignUp : handleLogin} className="space-y-4">
-            {isSignUp && (
-              <>
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="signup">Cadastro</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="login">
+              <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <Label htmlFor="restaurantName">Nome do Restaurante</Label>
+                  <Label htmlFor="login-email">Email</Label>
                   <Input
-                    id="restaurantName"
-                    value={restaurantName}
-                    onChange={(e) => setRestaurantName(e.target.value)}
-                    placeholder="Ex: Restaurante do João"
+                    id="login-email"
+                    type="email"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
                     required
-                    className="mt-1"
                   />
                 </div>
-                
                 <div>
-                  <Label htmlFor="ownerName">Nome do Proprietário</Label>
+                  <Label htmlFor="login-password">Senha</Label>
                   <Input
-                    id="ownerName"
+                    id="login-password"
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? 'Entrando...' : 'Entrar'}
+                </Button>
+              </form>
+            </TabsContent>
+            
+            <TabsContent value="signup">
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div>
+                  <Label htmlFor="owner-name">Nome do Proprietário</Label>
+                  <Input
+                    id="owner-name"
                     value={ownerName}
                     onChange={(e) => setOwnerName(e.target.value)}
-                    placeholder="Ex: João Silva"
                     required
-                    className="mt-1"
                   />
                 </div>
-
                 <div>
-                  <Label htmlFor="phone">Telefone (Opcional)</Label>
+                  <Label htmlFor="restaurant-name">Nome do Restaurante</Label>
+                  <Input
+                    id="restaurant-name"
+                    value={restaurantName}
+                    onChange={(e) => setRestaurantName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="signup-email">Email</Label>
+                  <Input
+                    id="signup-email"
+                    type="email"
+                    value={signupEmail}
+                    onChange={(e) => setSignupEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="signup-password">Senha</Label>
+                  <Input
+                    id="signup-password"
+                    type="password"
+                    value={signupPassword}
+                    onChange={(e) => setSignupPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="phone">Telefone</Label>
                   <Input
                     id="phone"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Ex: (11) 99999-9999"
-                    className="mt-1"
                   />
                 </div>
-
                 <div>
-                  <Label htmlFor="address">Endereço (Opcional)</Label>
+                  <Label htmlFor="address">Endereço</Label>
                   <Input
                     id="address"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Ex: Rua das Flores, 123"
-                    className="mt-1"
                   />
                 </div>
-              </>
-            )}
-            
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu@email.com"
-                required
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="password">Senha</Label>
-              <div className="relative mt-1">
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? 'Cadastrando...' : 'Cadastrar'}
                 </Button>
-              </div>
-            </div>
-
-            <Button 
-              type="submit" 
-              className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
-              disabled={loading}
-            >
-              {loading ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              ) : null}
-              {isSignUp ? 'Cadastrar Restaurante' : 'Entrar'}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <Button
-              variant="link"
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-orange-600 hover:text-orange-700"
-            >
-              {isSignUp 
-                ? 'Já tem uma conta? Fazer login'
-                : 'Não tem conta? Cadastrar restaurante'
-              }
-            </Button>
-          </div>
+              </form>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>
   );
-};
-
-const handleSignUp = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
-
-  try {
-    // 1. Criar usuário primeiro
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name: ownerName,
-          restaurant_name: restaurantName,
-        }
-      }
-    });
-
-    if (authError) throw authError;
-
-    if (authData.user) {
-      // 2. Aguardar um pouco para garantir que o usuário foi criado
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // 3. Fazer login temporário para ter acesso autenticado
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (signInError) throw signInError;
-
-      // 4. Criar empresa (agora com usuário autenticado)
-      const { data: companyData, error: companyError } = await supabase
-        .from('companies')
-        .insert([
-          {
-            name: restaurantName,
-            email: email,
-            phone: phone || null,
-            address: address || null,
-            owner_id: authData.user.id,
-          }
-        ])
-        .select()
-        .single();
-
-      if (companyError) throw companyError;
-
-      // 5. Criar perfil do usuário vinculado à empresa
-      const { error: profileError } = await supabase
-        .from('profiles' as any)
-        .insert([
-          {
-            id: authData.user.id,
-            company_id: companyData.id,
-            name: ownerName,
-            email: email,
-            role: 'admin',
-          }
-        ]);
-
-      if (profileError) throw profileError;
-
-      toast({
-        title: "Restaurante cadastrado com sucesso!",
-        description: "Sua conta foi criada. Redirecionando para o painel admin...",
-      });
-
-      // Redirecionar para admin após cadastro bem-sucedido
-      setTimeout(() => {
-        navigate('/admin', { replace: true });
-      }, 1000);
-    }
-  } catch (error: any) {
-    console.error('Erro detalhado:', error);
-    toast({
-      title: "Erro ao criar conta",
-      description: error.message,
-      variant: "destructive",
-    });
-  } finally {
-    setLoading(false);
-  }
 };
 
 export default RestaurantAuth;

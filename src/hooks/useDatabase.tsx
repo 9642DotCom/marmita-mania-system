@@ -1,4 +1,3 @@
-
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -250,6 +249,38 @@ export const useDatabase = () => {
 
   const updateOrderStatus = useAuthenticatedMutation({
     mutationFn: async ({ id, status }: { id: string; status: 'pendente' | 'preparando' | 'saiu_entrega' | 'entregue' | 'cancelado' }) => {
+      console.log(`Updating order ${id} to status ${status}`);
+      
+      // Se está finalizando um pedido local (pagamento), liberar a mesa
+      if (status === 'entregue') {
+        // Primeiro buscar o pedido para verificar se é local e qual mesa
+        const { data: orderData, error: orderError } = await supabase
+          .from('orders')
+          .select('table_id, order_type')
+          .eq('id', id)
+          .single();
+
+        if (orderError) {
+          console.error('Error fetching order for table update:', orderError);
+          throw orderError;
+        }
+
+        // Se for pedido local e tiver mesa, liberar a mesa
+        if (orderData.order_type === 'local' && orderData.table_id) {
+          const { error: tableError } = await supabase
+            .from('tables')
+            .update({ status: 'available' })
+            .eq('id', orderData.table_id);
+
+          if (tableError) {
+            console.error('Error updating table status:', tableError);
+            throw tableError;
+          }
+          console.log(`Mesa ${orderData.table_id} liberada após pagamento`);
+        }
+      }
+
+      // Atualizar o status do pedido
       const { data, error } = await supabase
         .from('orders')
         .update({ status })
@@ -257,10 +288,15 @@ export const useDatabase = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating order status:', error);
+        throw error;
+      }
+      
+      console.log(`Order ${id} updated to ${status}`);
       return data;
     },
-    queryKey: ['orders'],
+    queryKey: ['orders', 'tables'],
   });
 
   // User management (profiles)

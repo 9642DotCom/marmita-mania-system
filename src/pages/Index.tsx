@@ -38,28 +38,31 @@ const Index = () => {
         return productCategory?.name === selectedCategory;
       });
 
-  // Usar configurações da empresa ou valores padrão
-  const restaurantName = settings?.restaurant_name || 'Marmita Mania';
-  const restaurantSlogan = settings?.restaurant_slogan || 'Sabor caseiro na sua mesa, todos os dias!';
-  const siteTitle = settings?.site_title || 'Marmitas Deliciosas';
-  const siteDescription = settings?.site_description || 'Sabor caseiro entregue na sua porta';
-  const whatsappPhone = settings?.whatsapp_phone || '(11) 99999-9999';
-  const city = settings?.city || 'São Paulo';
-  const state = settings?.state || 'SP';
-  const businessHours = settings?.business_hours || 'Segunda a Domingo: 10h às 22h';
+  // Usar configurações da empresa carregadas do banco de dados
+  const restaurantName = settings?.restaurant_name || 'Carregando...';
+  const restaurantSlogan = settings?.restaurant_slogan || 'Carregando...';
+  const siteTitle = settings?.site_title || 'Carregando...';
+  const siteDescription = settings?.site_description || 'Carregando...';
+  const whatsappPhone = settings?.whatsapp_phone || 'Carregando...';
+  const city = settings?.city || 'Carregando...';
+  const state = settings?.state || '';
+  const businessHours = settings?.business_hours || 'Carregando...';
 
-  // Informações das seções
-  const item1Title = settings?.item1_title || 'Ingredientes Frescos';
-  const item1Description = settings?.item1_description || 'Selecionamos apenas os melhores ingredientes';
-  const item2Title = settings?.item2_title || 'Entrega Rápida';
-  const item2Description = settings?.item2_description || 'Receba sua marmita quentinha em até 45 minutos';
-  const item3Title = settings?.item3_title || 'Feito com Amor';
-  const item3Description = settings?.item3_description || 'Cada marmita é preparada com carinho e tradição';
+  // Informações das seções carregadas dinamicamente
+  const item1Title = settings?.item1_title || 'Carregando...';
+  const item1Description = settings?.item1_description || 'Carregando...';
+  const item2Title = settings?.item2_title || 'Carregando...';
+  const item2Description = settings?.item2_description || 'Carregando...';
+  const item3Title = settings?.item3_title || 'Carregando...';
+  const item3Description = settings?.item3_description || 'Carregando...';
 
   if (isLoadingProducts || isLoadingCategories || isLoadingSettings) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando informações do restaurante...</p>
+        </div>
       </div>
     );
   }
@@ -73,7 +76,7 @@ const Index = () => {
         restaurantSlogan={restaurantSlogan}
       />
       
-      {/* Hero Section */}
+      {/* Hero Section - Totalmente dinâmico */}
       <section className="bg-gradient-to-r from-orange-500 to-red-500 text-white py-16">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl md:text-6xl font-bold mb-4 animate-fade-in">
@@ -158,14 +161,14 @@ const Index = () => {
         )}
       </section>
 
-      {/* Footer */}
+      {/* Footer - Totalmente dinâmico */}
       <footer className="bg-gray-800 text-white py-12">
         <div className="container mx-auto px-4 text-center">
           <h3 className="text-2xl font-bold mb-4">{restaurantName}</h3>
           <p className="text-gray-400 mb-4">{restaurantSlogan}</p>
           <div className="flex justify-center space-x-8 text-sm text-gray-400">
             <span>📞 {whatsappPhone}</span>
-            <span>📍 {city}, {state}</span>
+            <span>📍 {city}{state && `, ${state}`}</span>
             <span>⏰ {businessHours}</span>
           </div>
         </div>

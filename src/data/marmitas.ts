@@ -1,77 +1,77 @@
 
 import { MarmitaItem } from '@/hooks/useCart';
 
-export const marmitas: MarmitaItem[] = [
+export const marmitasData: MarmitaItem[] = [
   {
-    id: 1,
-    name: "Marmita Executiva",
-    description: "Arroz, feijão, bife acebolado, batata frita e salada completa. Uma refeição equilibrada e saborosa.",
-    price: 18.50,
-    image: "photo-1618160702438-9b02ab6515c9",
-    category: "Executiva",
-    ingredients: ["Arroz", "Feijão", "Bife", "Batata", "Alface", "Tomate"]
+    id: "1",
+    name: "Marmita Tradicional",
+    description: "Arroz, feijão, bife acebolado, batata frita e salada",
+    price: 18.90,
+    image: "/placeholder.svg",
+    category: "Tradicionais",
+    ingredients: ["Arroz", "Feijão", "Bife", "Batata", "Salada"]
   },
   {
-    id: 2,
-    name: "Marmita Fitness",
-    description: "Arroz integral, feijão, peito de frango grelhado, legumes no vapor e salada verde.",
-    price: 22.00,
-    image: "photo-1618160702438-9b02ab6515c9",
-    category: "Fitness",
-    ingredients: ["Arroz Integral", "Feijão", "Frango Grelhado", "Brócolis", "Cenoura", "Salada"]
-  },
-  {
-    id: 3,
-    name: "Marmita Caseira",
-    description: "Arroz, feijão tropeiro, linguiça calabresa, ovo frito e couve refogada. Sabor de casa da vovó!",
+    id: "2", 
+    name: "Marmita de Frango",
+    description: "Arroz, feijão, frango grelhado, purê e legumes",
     price: 16.90,
-    image: "photo-1618160702438-9b02ab6515c9",
-    category: "Caseira",
-    ingredients: ["Arroz", "Feijão Tropeiro", "Linguiça", "Ovo", "Couve", "Farofa"]
+    image: "/placeholder.svg",
+    category: "Tradicionais",
+    ingredients: ["Arroz", "Feijão", "Frango", "Purê", "Legumes"]
   },
   {
-    id: 4,
-    name: "Marmita Vegana",
-    description: "Arroz com açafrão, feijão preto, proteína de soja, mix de vegetais e quinoa.",
+    id: "3",
+    name: "Marmita Vegetariana",
+    description: "Arroz integral, feijão, legumes refogados e salada",
+    price: 15.90,
+    image: "/placeholder.svg",
+    category: "Vegetarianas",
+    ingredients: ["Arroz Integral", "Feijão", "Legumes", "Salada"]
+  },
+  {
+    id: "4",
+    name: "Marmita Fitness",
+    description: "Arroz integral, grão de bico, peito de frango e brócolis",
     price: 19.90,
-    image: "photo-1618160702438-9b02ab6515c9",
-    category: "Vegana",
-    ingredients: ["Arroz", "Feijão Preto", "Proteína de Soja", "Quinoa", "Vegetais", "Tahine"]
+    image: "/placeholder.svg",
+    category: "Fitness",
+    ingredients: ["Arroz Integral", "Grão de Bico", "Frango", "Brócolis"]
   },
   {
-    id: 5,
-    name: "Marmita do Chefe",
-    description: "Risotto de camarão, salmão grelhado, aspargos e mix de folhas nobres. Experiência gourmet!",
-    price: 35.00,
-    image: "photo-1618160702438-9b02ab6515c9",
-    category: "Gourmet",
-    ingredients: ["Risotto", "Camarão", "Salmão", "Aspargos", "Rúcula", "Parmesão"]
+    id: "5",
+    name: "Marmita de Peixe",
+    description: "Arroz, feijão, peixe grelhado, batata doce e salada",
+    price: 22.90,
+    image: "/placeholder.svg",
+    category: "Especiais",
+    ingredients: ["Arroz", "Feijão", "Peixe", "Batata Doce", "Salada"]
   },
   {
-    id: 6,
-    name: "Marmita Nordestina",
-    description: "Baião de dois, carne de sol desfiada, queijo coalho, macaxeira e vinagrete especial.",
-    price: 21.50,
-    image: "photo-1618160702438-9b02ab6515c9",
-    category: "Regional",
-    ingredients: ["Baião de Dois", "Carne de Sol", "Queijo Coalho", "Macaxeira", "Vinagrete"]
+    id: "6",
+    name: "Marmita Executiva",
+    description: "Arroz, feijão tropeiro, picanha, farofa e vinagrete",
+    price: 25.90,
+    image: "/placeholder.svg",
+    category: "Executivas",
+    ingredients: ["Arroz", "Feijão Tropeiro", "Picanha", "Farofa", "Vinagrete"]
   },
   {
-    id: 7,
-    name: "Marmita Mineira",
-    description: "Arroz, feijão tutu, costelinha suína, couve à mineira e torresmo. Tradição de Minas!",
-    price: 24.00,
-    image: "photo-1618160702438-9b02ab6515c9",
-    category: "Regional",
-    ingredients: ["Arroz", "Tutu de Feijão", "Costelinha", "Couve", "Torresmo", "Linguiça"]
+    id: "7",
+    name: "Marmita Light",
+    description: "Quinoa, legumes no vapor, frango desfiado e salada verde",
+    price: 21.90,
+    image: "/placeholder.svg",
+    category: "Light",
+    ingredients: ["Quinoa", "Legumes", "Frango Desfiado", "Salada Verde"]
   },
   {
-    id: 8,
-    name: "Marmita Kids",
-    description: "Arroz, feijão sem caldo, nuggets de frango, batata smile e cenoura baby.",
-    price: 14.90,
-    image: "photo-1618160702438-9b02ab6515c9",
-    category: "Infantil",
-    ingredients: ["Arroz", "Feijão", "Nuggets", "Batata Smile", "Cenoura", "Milho"]
+    id: "8",
+    name: "Marmita Caseira",
+    description: "Arroz, feijão, costelinha, mandioca e couve refogada",
+    price: 23.90,
+    image: "/placeholder.svg",
+    category: "Caseiras",
+    ingredients: ["Arroz", "Feijão", "Costelinha", "Mandioca", "Couve"]
   }
 ];

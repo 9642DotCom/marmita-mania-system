@@ -29,20 +29,11 @@ const CompanySetupForm = ({ user, onSetupComplete }: CompanySetupFormProps) => {
     try {
       console.log('Configurando empresa para usuário:', user);
 
-      // Se temos uma sessão, usá-la; caso contrário, tentar fazer login
-      if (user.session) {
-        console.log('Usando sessão existente');
-        await supabase.auth.setSession({
-          access_token: user.session.access_token,
-          refresh_token: user.session.refresh_token
-        });
-      }
-
       // Verificar se o usuário está autenticado
-      const { data: currentUser } = await supabase.auth.getUser();
+      const { data: currentUser, error: userError } = await supabase.auth.getUser();
       console.log('Usuário atual:', currentUser);
 
-      if (!currentUser.user) {
+      if (userError || !currentUser.user) {
         throw new Error('Usuário não está autenticado');
       }
 
@@ -71,7 +62,7 @@ const CompanySetupForm = ({ user, onSetupComplete }: CompanySetupFormProps) => {
       console.log('Empresa criada:', companyData);
 
       // 2. Criar perfil do usuário como admin
-      console.log('Criando perfil...');
+      console.log('Criando perfil como admin...');
       const { error: profileError } = await supabase
         .from('profiles')
         .insert([
@@ -89,7 +80,7 @@ const CompanySetupForm = ({ user, onSetupComplete }: CompanySetupFormProps) => {
         throw profileError;
       }
 
-      console.log('Perfil criado com sucesso');
+      console.log('Perfil criado com sucesso como admin');
 
       toast({
         title: "Restaurante configurado com sucesso!",

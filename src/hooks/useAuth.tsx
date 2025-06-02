@@ -23,9 +23,13 @@ export const useAuth = () => {
     // Escutar mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state change:', event, session?.user?.id);
         setUser(session?.user ?? null);
         if (session?.user) {
-          loadProfile(session.user.id);
+          // Aguardar um pouco antes de carregar o perfil para dar tempo dos dados serem inseridos
+          setTimeout(() => {
+            loadProfile(session.user.id);
+          }, 500);
         } else {
           setProfile(null);
           setLoading(false);
@@ -38,16 +42,23 @@ export const useAuth = () => {
 
   const loadProfile = async (userId: string) => {
     try {
+      console.log('Carregando perfil para usuário:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao carregar perfil:', error);
+        throw error;
+      }
+      
+      console.log('Perfil carregado:', data);
       setProfile(data as Profile);
     } catch (error) {
       console.error('Erro ao carregar perfil:', error);
+      setProfile(null);
     } finally {
       setLoading(false);
     }

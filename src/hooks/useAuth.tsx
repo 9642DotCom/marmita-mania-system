@@ -11,16 +11,13 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Função para limpar estado de autenticação
   const cleanupAuthState = () => {
     console.log('Limpando estado de autenticação...');
-    // Limpar localStorage
     Object.keys(localStorage).forEach((key) => {
       if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
         localStorage.removeItem(key);
       }
     });
-    // Limpar sessionStorage
     Object.keys(sessionStorage || {}).forEach((key) => {
       if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
         sessionStorage.removeItem(key);
@@ -28,7 +25,6 @@ export const useAuth = () => {
     });
   };
 
-  // Função para verificar e renovar token se necessário
   const refreshTokenIfNeeded = async () => {
     try {
       const { data: { session }, error } = await supabase.auth.getSession();
@@ -46,12 +42,11 @@ export const useAuth = () => {
         return false;
       }
 
-      // Verificar se o token vai expirar em menos de 5 minutos
       const expiresAt = session.expires_at || 0;
       const now = Math.floor(Date.now() / 1000);
       const timeUntilExpiry = expiresAt - now;
       
-      if (timeUntilExpiry < 300) { // Menos de 5 minutos
+      if (timeUntilExpiry < 300) {
         console.log('Token próximo do vencimento, renovando...');
         const { error: refreshError } = await supabase.auth.refreshSession();
         if (refreshError) {
@@ -69,51 +64,10 @@ export const useAuth = () => {
     }
   };
 
-  useEffect(() => {
-    console.log('Inicializando useAuth...');
-    
-    // Verificar usuário atual
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      console.log('Usuário atual detectado:', user?.id);
-      setUser(user);
-      if (user) {
-        loadProfile(user.id);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    // Escutar mudanças de autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.id, 'Current path:', window.location.pathname);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          console.log('Usuário logado, carregando perfil...');
-          loadProfile(session.user.id);
-        } else {
-          console.log('Usuário deslogado');
-          setProfile(null);
-          setLoading(false);
-        }
-      }
-    );
-
-    // Configurar verificação periódica do token (a cada 10 minutos)
-    const tokenCheckInterval = setInterval(refreshTokenIfNeeded, 10 * 60 * 1000);
-
-    return () => {
-      subscription.unsubscribe();
-      clearInterval(tokenCheckInterval);
-    };
-  }, []);
-
   const loadProfile = async (userId: string) => {
     try {
       console.log('Carregando perfil para usuário:', userId);
       
-      // Primeiro, obter informações do usuário atual
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError) {
         console.error('Erro ao obter dados do usuário:', userError);
@@ -123,10 +77,8 @@ export const useAuth = () => {
 
       const userEmail = userData.user?.email || '';
       
-      // Detectar se é admin baseado no email
       const isAdmin = userEmail.includes('admin') || userEmail.includes('rodrigo') || userEmail === 'rodrigo_nunes.182@hotmail.com';
       
-      // Tentar carregar o perfil do banco de dados
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -136,7 +88,6 @@ export const useAuth = () => {
       if (error) {
         console.error('Erro ao carregar perfil:', error);
         
-        // Criar perfil padrão se não existir
         const defaultProfile = { 
           id: userId, 
           role: isAdmin ? 'admin' : 'garcon',
@@ -150,7 +101,6 @@ export const useAuth = () => {
         console.log('Criando perfil padrão:', defaultProfile);
         setProfile(defaultProfile);
         
-        // Tentar inserir o perfil no banco de dados
         try {
           await supabase
             .from('profiles')
@@ -162,7 +112,6 @@ export const useAuth = () => {
       } else if (data) {
         console.log('Perfil carregado com sucesso:', data);
         
-        // Garantir que o perfil tem company_id
         const profileWithCompany = {
           ...data,
           company_id: data.company_id || 'default-company-id'
@@ -184,7 +133,6 @@ export const useAuth = () => {
         
         setProfile(defaultProfile);
         
-        // Tentar inserir o perfil no banco de dados
         try {
           await supabase
             .from('profiles')
@@ -195,7 +143,6 @@ export const useAuth = () => {
         }
       }
 
-      // Redirecionar se estamos na página de auth
       const currentPath = window.location.pathname;
       if (currentPath === '/auth') {
         console.log('Redirecionamento necessário para role:', profile?.role || (isAdmin ? 'admin' : 'garcon'));
@@ -213,7 +160,6 @@ export const useAuth = () => {
   useEffect(() => {
     console.log('Inicializando useAuth...');
     
-    // Verificar usuário atual
     supabase.auth.getUser().then(({ data: { user } }) => {
       console.log('Usuário atual detectado:', user?.id);
       setUser(user);
@@ -224,7 +170,6 @@ export const useAuth = () => {
       }
     });
 
-    // Escutar mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id, 'Current path:', window.location.pathname);
@@ -241,7 +186,6 @@ export const useAuth = () => {
       }
     );
 
-    // Configurar verificação periódica do token (a cada 10 minutos)
     const tokenCheckInterval = setInterval(refreshTokenIfNeeded, 10 * 60 * 1000);
 
     return () => {
@@ -325,11 +269,9 @@ export const useAuth = () => {
       await supabase.auth.signOut({ scope: 'global' });
       setUser(null);
       setProfile(null);
-      // Forçar refresh da página para garantir limpeza completa
       window.location.href = '/auth';
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
-      // Mesmo com erro, limpar o estado e redirecionar
       cleanupAuthState();
       setUser(null);
       setProfile(null);

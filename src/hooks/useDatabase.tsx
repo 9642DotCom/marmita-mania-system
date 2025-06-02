@@ -251,7 +251,6 @@ export const useDatabase = () => {
     mutationFn: async ({ id, status }: { id: string; status: 'pendente' | 'preparando' | 'saiu_entrega' | 'entregue' | 'cancelado' }) => {
       console.log(`Updating order ${id} to status ${status}`);
       
-      // Primeiro buscar o pedido para verificar se é local e qual mesa
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .select('table_id, order_type')
@@ -263,7 +262,6 @@ export const useDatabase = () => {
         throw orderError;
       }
 
-      // Atualizar o status do pedido PRIMEIRO
       const { data, error } = await supabase
         .from('orders')
         .update({ status })
@@ -276,10 +274,8 @@ export const useDatabase = () => {
         throw error;
       }
 
-      // DEPOIS atualizar o status da mesa baseado no status do pedido
       if (orderData.order_type === 'local' && orderData.table_id) {
         if (status === 'entregue') {
-          // Quando garçom entrega na mesa, a mesa continua ocupada (cliente comendo)
           const { error: tableError } = await supabase
             .from('tables')
             .update({ status: 'occupied' })
@@ -291,7 +287,6 @@ export const useDatabase = () => {
           }
           console.log(`Mesa ${orderData.table_id} continua ocupada - cliente comendo`);
         } else if (status === 'cancelado') {
-          // Se pedido foi cancelado, liberar a mesa
           const { error: tableError } = await supabase
             .from('tables')
             .update({ status: 'available' })
@@ -316,7 +311,6 @@ export const useDatabase = () => {
     mutationFn: async ({ orderId, paymentMethod }: { orderId: string; paymentMethod?: string }) => {
       console.log(`Processing payment for order ${orderId} via ${paymentMethod || 'não especificado'}`);
       
-      // Primeiro buscar o pedido para verificar se é local e qual mesa
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .select('table_id, order_type, status, notes, total_amount')
@@ -328,12 +322,10 @@ export const useDatabase = () => {
         throw orderError;
       }
 
-      // Verificar se o pedido está no status correto para pagamento
       if (orderData.status !== 'entregue') {
         throw new Error('Pedido não está pronto para pagamento');
       }
 
-      // Se for pedido local e tiver mesa, liberar a mesa após pagamento
       if (orderData.order_type === 'local' && orderData.table_id) {
         const { error: tableError } = await supabase
           .from('tables')
@@ -347,7 +339,6 @@ export const useDatabase = () => {
         console.log(`Mesa ${orderData.table_id} liberada após pagamento`);
       }
 
-      // Marcar pedido como finalizado com informações de pagamento
       const paymentNote = paymentMethod ? ` [PAGO - ${paymentMethod.toUpperCase()}]` : ' [PAGO]';
       const { data, error } = await supabase
         .from('orders')
@@ -408,28 +399,71 @@ export const useDatabase = () => {
     mutationFn: async (userData: {
       name: string;
       email: string;
+      password: string;
       role: string;
     }) => {
       if (!profile?.company_id) {
         throw new Error('Erro: ID da empresa não encontrado. Tente fazer login novamente.');
       }
 
-      // Note: In a real implementation, you would create the auth user first
-      // For now, we'll just create a profile entry
-      const { data, error } = await supabase
+      console.log('Criando usuário no Auth e Profile:', userData.email);
+
+      // Primeiro, criar o usuário no sistema de autenticação
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: userData.email,
+        password: userData.password,
+        options: {
+          data: {
+            name: userData.name,
+            role: userData.role,
+            company_id: profile.company_id
+          }
+        }
+      });
+
+      if (authError) {
+        console.error('Erro ao criar usuário no Auth:', authError);
+        throw new Error(`Erro ao criar usuário: ${authError.message}`);
+      }
+
+      if (!authData.user) {
+        throw new Error('Usuário não foi criado no sistema de autenticação');
+      }
+
+      console.log('Usuário criado no Auth:', authData.user.id);
+
+      // Criar ou atualizar o perfil na tabela profiles
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .insert([
+        .upsert([
           {
-            ...userData,
+            id: authData.user.id,
+            name: userData.name,
+            email: userData.email,
+            role: userData.role,
             company_id: profile.company_id,
-            id: crypto.randomUUID(), // Temporary - should come from auth
           }
         ])
         .select()
         .single();
 
-      if (error) throw error;
-      return data;
+      if (profileError) {
+        console.error('Erro ao criar perfil:', profileError);
+        // Se falhar ao criar o perfil, ainda retornamos sucesso pois o usuário foi criado no Auth
+        console.log('Perfil não foi criado, mas usuário existe no Auth');
+      } else {
+        console.log('Perfil criado com sucesso:', profileData);
+      }
+
+      return profileData || {
+        id: authData.user.id,
+        name: userData.name,
+        email: userData.email,
+        role: userData.role,
+        company_id: profile.company_id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
     },
     queryKey: ['users'],
   });
@@ -598,7 +632,6 @@ export const useDatabase = () => {
         throw new Error('Erro: ID da empresa não encontrado. Tente fazer login novamente.');
       }
 
-      // Primeiro, tentar atualizar se já existe
       const { data: existingData } = await supabase
         .from('company_settings')
         .select('id')
@@ -606,7 +639,6 @@ export const useDatabase = () => {
         .single();
 
       if (existingData) {
-        // Atualizar registro existente
         const { data, error } = await supabase
           .from('company_settings')
           .update(settingsData)
@@ -617,7 +649,6 @@ export const useDatabase = () => {
         if (error) throw error;
         return data;
       } else {
-        // Criar novo registro
         const { data, error } = await supabase
           .from('company_settings')
           .insert([

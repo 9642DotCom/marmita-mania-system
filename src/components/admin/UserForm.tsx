@@ -19,6 +19,7 @@ const UserForm = ({ user, onSubmit, onCancel }: UserFormProps) => {
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
+    password: '',
     role: user?.role || 'caixa' as User['role'],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -28,6 +29,7 @@ const UserForm = ({ user, onSubmit, onCancel }: UserFormProps) => {
       setFormData({
         name: user.name,
         email: user.email,
+        password: '', // Não preencher senha para edição
         role: user.role,
       });
     }
@@ -39,11 +41,14 @@ const UserForm = ({ user, onSubmit, onCancel }: UserFormProps) => {
 
     try {
       if (user) {
+        // Para edição, não incluir senha
+        const { password, ...updateData } = formData;
         await updateUser.mutateAsync({
           id: user.id,
-          ...formData
+          ...updateData
         });
       } else {
+        // Para criação, incluir senha
         await createUser.mutateAsync(formData);
       }
       onSubmit();
@@ -86,6 +91,21 @@ const UserForm = ({ user, onSubmit, onCancel }: UserFormProps) => {
                 required
               />
             </div>
+
+            {!user && (
+              <div>
+                <Label htmlFor="password">Senha</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => handleChange('password', e.target.value)}
+                  required
+                  minLength={6}
+                  placeholder="Mínimo 6 caracteres"
+                />
+              </div>
+            )}
 
             <div>
               <Label htmlFor="role">Categoria</Label>

@@ -18,6 +18,10 @@ const CompanySettings = () => {
     restaurant_name: '',
     restaurant_slogan: '',
     logo_url: '',
+    whatsapp_phone: '',
+    city: '',
+    state: '',
+    business_hours: '',
     site_title: '',
     site_description: '',
     item1_title: '',
@@ -34,6 +38,10 @@ const CompanySettings = () => {
         restaurant_name: settings.restaurant_name || '',
         restaurant_slogan: settings.restaurant_slogan || '',
         logo_url: settings.logo_url || '',
+        whatsapp_phone: settings.whatsapp_phone || '',
+        city: settings.city || '',
+        state: settings.state || '',
+        business_hours: settings.business_hours || '',
         site_title: settings.site_title || '',
         site_description: settings.site_description || '',
         item1_title: settings.item1_title || '',
@@ -135,6 +143,50 @@ const CompanySettings = () => {
                   value={formData.restaurant_slogan}
                   onChange={(e) => handleInputChange('restaurant_slogan', e.target.value)}
                   placeholder="Slogan do restaurante"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="whatsapp_phone">Telefone WhatsApp</Label>
+                <Input
+                  id="whatsapp_phone"
+                  value={formData.whatsapp_phone}
+                  onChange={(e) => handleInputChange('whatsapp_phone', e.target.value)}
+                  placeholder="(11) 99999-9999"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="business_hours">Horário de Atendimento</Label>
+                <Input
+                  id="business_hours"
+                  value={formData.business_hours}
+                  onChange={(e) => handleInputChange('business_hours', e.target.value)}
+                  placeholder="Seg a Dom: 18h às 23h"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="city">Cidade</Label>
+                <Input
+                  id="city"
+                  value={formData.city}
+                  onChange={(e) => handleInputChange('city', e.target.value)}
+                  placeholder="Nome da cidade"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="state">Estado</Label>
+                <Input
+                  id="state"
+                  value={formData.state}
+                  onChange={(e) => handleInputChange('state', e.target.value)}
+                  placeholder="UF do estado"
                 />
               </div>
             </div>

@@ -85,6 +85,8 @@ export type Database = {
       }
       company_settings: {
         Row: {
+          business_hours: string | null
+          city: string | null
           company_id: string
           created_at: string | null
           id: string
@@ -99,9 +101,13 @@ export type Database = {
           restaurant_slogan: string | null
           site_description: string | null
           site_title: string | null
+          state: string | null
           updated_at: string | null
+          whatsapp_phone: string | null
         }
         Insert: {
+          business_hours?: string | null
+          city?: string | null
           company_id: string
           created_at?: string | null
           id?: string
@@ -116,9 +122,13 @@ export type Database = {
           restaurant_slogan?: string | null
           site_description?: string | null
           site_title?: string | null
+          state?: string | null
           updated_at?: string | null
+          whatsapp_phone?: string | null
         }
         Update: {
+          business_hours?: string | null
+          city?: string | null
           company_id?: string
           created_at?: string | null
           id?: string
@@ -133,7 +143,9 @@ export type Database = {
           restaurant_slogan?: string | null
           site_description?: string | null
           site_title?: string | null
+          state?: string | null
           updated_at?: string | null
+          whatsapp_phone?: string | null
         }
         Relationships: [
           {

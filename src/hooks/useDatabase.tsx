@@ -589,6 +589,10 @@ export const useDatabase = () => {
       item2_description?: string;
       item3_title?: string;
       item3_description?: string;
+      whatsapp_phone?: string;
+      city?: string;
+      state?: string;
+      business_hours?: string;
     }) => {
       if (!profile?.company_id) {
         throw new Error('Erro: ID da empresa não encontrado. Tente fazer login novamente.');

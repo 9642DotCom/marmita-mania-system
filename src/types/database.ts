@@ -1,3 +1,4 @@
+
 // Tipos temporários para as novas tabelas até o Supabase atualizar os tipos automaticamente
 export interface Company {
   id: string;
@@ -97,6 +98,10 @@ export interface CompanySettings {
   item2_description?: string;
   item3_title?: string;
   item3_description?: string;
+  whatsapp_phone?: string;
+  city?: string;
+  state?: string;
+  business_hours?: string;
   created_at: string;
   updated_at: string;
 }

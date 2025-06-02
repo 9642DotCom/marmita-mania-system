@@ -66,7 +66,7 @@ const LoginForm = () => {
       if (authData.user) {
         // 2. Criar empresa
         const { data: companyData, error: companyError } = await supabase
-          .from('companies' as any)
+          .from('companies')
           .insert([
             {
               name: companyName,
@@ -80,7 +80,7 @@ const LoginForm = () => {
 
         // 3. Criar perfil do usuário
         const { error: profileError } = await supabase
-          .from('profiles' as any)
+          .from('profiles')
           .insert([
             {
               id: authData.user.id,

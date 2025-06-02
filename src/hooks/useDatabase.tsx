@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { Product, Table, Order, Company } from '@/types/database';
+import { Product, Table, Order } from '@/types/database';
 
 export const useDatabase = () => {
   const { profile } = useAuth();
@@ -16,7 +16,7 @@ export const useDatabase = () => {
         if (!profile?.company_id) return [];
         
         const { data, error } = await supabase
-          .from('products' as any)
+          .from('products')
           .select(`
             *,
             categories (
@@ -42,7 +42,7 @@ export const useDatabase = () => {
         if (!profile?.company_id) return [];
         
         const { data, error } = await supabase
-          .from('tables' as any)
+          .from('tables')
           .select('*')
           .eq('company_id', profile.company_id)
           .order('number');
@@ -62,7 +62,7 @@ export const useDatabase = () => {
         if (!profile?.company_id) return [];
         
         const { data, error } = await supabase
-          .from('orders' as any)
+          .from('orders')
           .select(`
             *,
             tables (
@@ -90,7 +90,7 @@ export const useDatabase = () => {
       if (!profile?.company_id) throw new Error('Company ID not found');
 
       const { data, error } = await supabase
-        .from('orders' as any)
+        .from('orders')
         .insert([
           {
             ...orderData,
@@ -117,11 +117,12 @@ export const useDatabase = () => {
         product_id: item.product_id,
         quantity: item.quantity,
         unit_price: item.unit_price,
+        subtotal: item.quantity * item.unit_price,
         notes: item.notes,
       }));
 
       const { data, error } = await supabase
-        .from('order_items' as any)
+        .from('order_items')
         .insert(orderItems);
 
       if (error) throw error;
@@ -135,7 +136,7 @@ export const useDatabase = () => {
       if (!profile?.company_id) throw new Error('Company ID not found');
 
       const { data, error } = await supabase
-        .from('tables' as any)
+        .from('tables')
         .insert([
           {
             ...tableData,

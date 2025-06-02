@@ -39,7 +39,7 @@ export const useAuth = () => {
   const loadProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('profiles' as any)
+        .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();

@@ -9,9 +9,10 @@ interface HeaderProps {
   onCartClick: () => void;
   restaurantName?: string;
   restaurantSlogan?: string;
+  logoUrl?: string;
 }
 
-const Header = ({ cartItemCount, onCartClick, restaurantName, restaurantSlogan }: HeaderProps) => {
+const Header = ({ cartItemCount, onCartClick, restaurantName, restaurantSlogan, logoUrl }: HeaderProps) => {
   const { user, signOut } = useAuth();
 
   return (
@@ -20,7 +21,15 @@ const Header = ({ cartItemCount, onCartClick, restaurantName, restaurantSlogan }
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="bg-white/20 p-2 rounded-full">
-              <Utensils className="h-8 w-8" />
+              {logoUrl ? (
+                <img 
+                  src={logoUrl} 
+                  alt="Logo" 
+                  className="h-8 w-8 object-cover rounded-full"
+                />
+              ) : (
+                <Utensils className="h-8 w-8" />
+              )}
             </div>
             <div>
               <h1 className="text-2xl font-bold">{restaurantName || 'Marmita Mania'}</h1>

@@ -41,6 +41,7 @@ const Index = () => {
   // Usar configurações da empresa carregadas do banco de dados
   const restaurantName = settings?.restaurant_name || 'Carregando...';
   const restaurantSlogan = settings?.restaurant_slogan || 'Carregando...';
+  const logoUrl = settings?.logo_url;
   const siteTitle = settings?.site_title || 'Carregando...';
   const siteDescription = settings?.site_description || 'Carregando...';
   const whatsappPhone = settings?.whatsapp_phone || 'Carregando...';
@@ -74,6 +75,7 @@ const Index = () => {
         onCartClick={() => setIsCartOpen(true)}
         restaurantName={restaurantName}
         restaurantSlogan={restaurantSlogan}
+        logoUrl={logoUrl}
       />
       
       {/* Hero Section - Totalmente dinâmico */}

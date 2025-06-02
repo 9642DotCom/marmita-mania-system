@@ -251,7 +251,7 @@ export const useDatabase = () => {
   };
 
   const updateOrderStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+    mutationFn: async ({ id, status }: { id: string; status: 'pendente' | 'preparando' | 'saiu_entrega' | 'entregue' | 'cancelado' }) => {
       const { data, error } = await supabase
         .from('orders')
         .update({ status })

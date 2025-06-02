@@ -137,7 +137,7 @@ const Caixa = () => {
   const pendingPayments = paymentOrders.filter((order: Order) => !order.notes?.includes('[PAGO]'));
   const completedPayments = paymentOrders.filter((order: Order) => order.notes?.includes('[PAGO]'));
 
-  // Calcular total do dia (pedidos pagos)
+  // Calcular total do dia (pedidos pagos) - removido da exibição mas mantido para logs
   const totalDay = completedPayments.reduce((sum, order) => sum + order.total_amount, 0);
 
   const filteredOrders = paymentOrders.filter(order =>
@@ -165,19 +165,7 @@ const Caixa = () => {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <DollarSign className="h-8 w-8 text-green-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total do Dia</p>
-                  <p className="text-2xl font-bold text-gray-900">R$ {totalDay.toFixed(2)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">

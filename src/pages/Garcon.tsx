@@ -21,7 +21,7 @@ interface OrderItem {
 
 const Garcon = () => {
   const { useProducts, useTables, createOrder, createOrderItems, createTable } = useDatabase();
-  const { user, signOut } = useAuth();
+  const { profile, signOut } = useAuth();
   const { data: products = [] } = useProducts();
   const { data: tables = [] } = useTables();
 
@@ -197,7 +197,7 @@ const Garcon = () => {
         <div className="mb-6 flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Sistema do Garçom</h1>
-            <p className="text-gray-600">Olá, {user?.user_metadata?.name || user?.email}! Gerencie mesas e atendimento</p>
+            <p className="text-gray-600">Olá, {profile?.name}! Gerencie mesas e atendimento</p>
           </div>
           <Button 
             onClick={signOut}

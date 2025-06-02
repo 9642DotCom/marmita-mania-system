@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { UserRole } from '@/hooks/useAuth';
 import { User } from './UserManagement';
 
 interface UserFormProps {
@@ -18,7 +17,7 @@ const UserForm = ({ user, onSubmit, onCancel }: UserFormProps) => {
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
-    role: user?.role || 'caixa' as UserRole,
+    category: user?.category || 'caixa' as User['category'],
     password: user?.password || ''
   });
 
@@ -61,13 +60,12 @@ const UserForm = ({ user, onSubmit, onCancel }: UserFormProps) => {
             </div>
 
             <div>
-              <Label htmlFor="role">Categoria</Label>
-              <Select value={formData.role} onValueChange={(value) => handleChange('role', value)}>
+              <Label htmlFor="category">Categoria</Label>
+              <Select value={formData.category} onValueChange={(value) => handleChange('category', value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione uma categoria" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="caixa">Caixa</SelectItem>
                   <SelectItem value="entregador">Entregador</SelectItem>
                   <SelectItem value="cozinha">Cozinha</SelectItem>

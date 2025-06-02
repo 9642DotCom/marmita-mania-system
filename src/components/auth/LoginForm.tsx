@@ -7,18 +7,15 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Building2 } from 'lucide-react';
-import SignUpForm from './SignUpForm';
-import CompanySetupForm from './CompanySetupForm';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [currentStep, setCurrentStep] = useState<'login' | 'signup' | 'company-setup'>('login');
-  const [newUser, setNewUser] = useState<any>(null);
-
-  console.log('LoginForm - Estado atual:', { currentStep, newUser });
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [companyName, setCompanyName] = useState('');
+  const [userName, setUserName] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,11 +33,6 @@ const LoginForm = () => {
         title: "Login realizado com sucesso!",
         description: "Bem-vindo de volta!",
       });
-
-      // Aguardar um pouco para o perfil carregar
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 1000);
     } catch (error: any) {
       toast({
         title: "Erro no login",
@@ -52,123 +44,198 @@ const LoginForm = () => {
     }
   };
 
-  const handleSignUpSuccess = (user: any) => {
-    console.log('LoginForm - handleSignUpSuccess chamado com:', user);
-    setNewUser(user);
-    setCurrentStep('company-setup');
-    console.log('LoginForm - Mudando para company-setup, novo estado será:', { currentStep: 'company-setup', newUser: user });
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // 1. Criar usuário primeiro
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: userName,
+            company_name: companyName,
+          }
+        }
+      });
+
+      if (authError) throw authError;
+
+      if (authData.user) {
+        // 2. Aguardar um pouco para garantir que o usuário foi criado
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // 3. Fazer login temporário para ter acesso autenticado
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (signInError) throw signInError;
+
+        // 4. Criar empresa (agora com usuário autenticado)
+        const { data: companyData, error: companyError } = await supabase
+          .from('companies')
+          .insert([
+            {
+              name: companyName,
+              email: email,
+            }
+          ])
+          .select()
+          .single();
+
+        if (companyError) throw companyError;
+
+        // 5. Criar perfil do usuário vinculado à empresa
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([
+            {
+              id: authData.user.id,
+              company_id: companyData.id,
+              name: userName,
+              email: email,
+              role: 'admin',
+            }
+          ]);
+
+        if (profileError) throw profileError;
+
+        toast({
+          title: "Conta criada com sucesso!",
+          description: "Sua empresa foi configurada. Você já está logado!",
+        });
+
+        // Recarregar a página para atualizar o estado
+        window.location.reload();
+      }
+    } catch (error: any) {
+      console.error('Erro detalhado:', error);
+      toast({
+        title: "Erro ao criar conta",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleCompanySetupComplete = () => {
-    console.log('LoginForm - Configuração da empresa finalizada, redirecionando para admin...');
-    // Aguardar um pouco para os dados serem processados
-    setTimeout(() => {
-      window.location.href = '/admin';
-    }, 1500);
-  };
-
-  console.log('LoginForm - Renderizando com currentStep:', currentStep);
-
-  if (currentStep === 'signup') {
-    console.log('LoginForm - Renderizando SignUpForm');
-    return (
-      <SignUpForm 
-        onSignUpSuccess={handleSignUpSuccess}
-        onBackToLogin={() => setCurrentStep('login')}
-      />
-    );
-  }
-
-  if (currentStep === 'company-setup') {
-    console.log('LoginForm - Renderizando CompanySetupForm com user:', newUser);
-    return (
-      <CompanySetupForm 
-        user={newUser}
-        onSetupComplete={handleCompanySetupComplete}
-      />
-    );
-  }
-
-  console.log('LoginForm - Renderizando formulário de login');
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader className="text-center">
-        <div className="flex justify-center mb-4">
-          <Building2 className="h-12 w-12 text-orange-600" />
-        </div>
-        <CardTitle className="text-2xl">Fazer Login</CardTitle>
-        <p className="text-gray-600">
-          Entre na sua conta para continuar
-        </p>
-      </CardHeader>
-      
-      <CardContent>
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="seu@email.com"
-              required
-            />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <div className="flex justify-center mb-4">
+            <Building2 className="h-12 w-12 text-orange-600" />
           </div>
-
-          <div>
-            <Label htmlFor="password">Senha</Label>
-            <div className="relative">
+          <CardTitle className="text-2xl">
+            {isSignUp ? 'Criar Conta' : 'Fazer Login'}
+          </CardTitle>
+          <p className="text-gray-600">
+            {isSignUp 
+              ? 'Configure sua empresa e crie sua conta'
+              : 'Entre na sua conta para continuar'
+            }
+          </p>
+        </CardHeader>
+        
+        <CardContent>
+          <form onSubmit={isSignUp ? handleSignUp : handleLogin} className="space-y-4">
+            {isSignUp && (
+              <>
+                <div>
+                  <Label htmlFor="companyName">Nome da Empresa</Label>
+                  <Input
+                    id="companyName"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="Ex: Restaurante do João"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="userName">Seu Nome</Label>
+                  <Input
+                    id="userName"
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                    placeholder="Ex: João Silva"
+                    required
+                  />
+                </div>
+              </>
+            )}
+            
+            <div>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seu@email.com"
                 required
               />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </Button>
             </div>
+
+            <div>
+              <Label htmlFor="password">Senha</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            <Button 
+              type="submit" 
+              className="w-full bg-orange-600 hover:bg-orange-700"
+              disabled={loading}
+            >
+              {loading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              ) : null}
+              {isSignUp ? 'Criar Conta' : 'Entrar'}
+            </Button>
+          </form>
+
+          <div className="mt-4 text-center">
+            <Button
+              variant="link"
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-orange-600"
+            >
+              {isSignUp 
+                ? 'Já tem uma conta? Fazer login'
+                : 'Não tem conta? Criar empresa'
+              }
+            </Button>
           </div>
-
-          <Button 
-            type="submit" 
-            className="w-full bg-orange-600 hover:bg-orange-700"
-            disabled={loading}
-          >
-            {loading ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-            ) : null}
-            Entrar
-          </Button>
-        </form>
-
-        <div className="mt-4 text-center">
-          <Button
-            variant="link"
-            onClick={() => {
-              console.log('LoginForm - Mudando para signup');
-              setCurrentStep('signup');
-            }}
-            className="text-orange-600"
-          >
-            Não tem conta? Criar empresa
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

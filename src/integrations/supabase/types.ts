@@ -49,11 +49,8 @@ export type Database = {
           address: string | null
           created_at: string | null
           email: string | null
-          horario_funcionamento: string | null
           id: string
-          logo_url: string | null
           name: string
-          owner_id: string | null
           phone: string | null
           updated_at: string | null
         }
@@ -61,11 +58,8 @@ export type Database = {
           address?: string | null
           created_at?: string | null
           email?: string | null
-          horario_funcionamento?: string | null
           id?: string
-          logo_url?: string | null
           name: string
-          owner_id?: string | null
           phone?: string | null
           updated_at?: string | null
         }
@@ -73,11 +67,8 @@ export type Database = {
           address?: string | null
           created_at?: string | null
           email?: string | null
-          horario_funcionamento?: string | null
           id?: string
-          logo_url?: string | null
           name?: string
-          owner_id?: string | null
           phone?: string | null
           updated_at?: string | null
         }
@@ -237,6 +228,13 @@ export type Database = {
             referencedRelation: "tables"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "orders_waiter_id_fkey"
+            columns: ["waiter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       products: {
@@ -296,6 +294,44 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          email: string
+          id: string
+          name: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tables: {
         Row: {
           available: boolean | null
@@ -341,10 +377,6 @@ export type Database = {
     Functions: {
       can_view_company_profiles: {
         Args: { target_company_id: string }
-        Returns: boolean
-      }
-      is_company_admin: {
-        Args: { company_uuid: string }
         Returns: boolean
       }
     }

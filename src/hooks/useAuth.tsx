@@ -2,42 +2,55 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
-
-export type UserRole = 'admin' | 'caixa' | 'entregador' | 'cozinha' | 'garcon';
+import { Profile } from '@/types/database';
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Verificar usuário atual
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
-      setLoading(false);
+      if (user) {
+        loadProfile(user.id);
+      } else {
+        setLoading(false);
+      }
     });
 
     // Escutar mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.id);
         setUser(session?.user ?? null);
-        setLoading(false);
+        if (session?.user) {
+          loadProfile(session.user.id);
+        } else {
+          setProfile(null);
+          setLoading(false);
+        }
       }
     );
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const getUserRole = (): UserRole | null => {
-    return user?.user_metadata?.role || null;
-  };
+  const loadProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-  const getCompanyId = (): string | null => {
-    return user?.user_metadata?.company_id || null;
-  };
-
-  const isAdmin = (): boolean => {
-    return getUserRole() === 'admin';
+      if (error) throw error;
+      setProfile(data as Profile);
+    } catch (error) {
+      console.error('Erro ao carregar perfil:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signOut = async () => {
@@ -46,10 +59,8 @@ export const useAuth = () => {
 
   return {
     user,
+    profile,
     loading,
-    getUserRole,
-    getCompanyId,
-    isAdmin,
     signOut,
   };
 };

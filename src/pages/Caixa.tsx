@@ -90,6 +90,20 @@ const Caixa = () => {
     }
   };
 
+  const getTableStatusMessage = (order: Order) => {
+    const isPaid = order.notes?.includes('[PAGO]');
+    
+    if (isPaid) {
+      return "Mesa liberada ✅";
+    }
+    
+    if (order.status === 'entregue' && order.order_type === 'local') {
+      return "Cliente comendo 🍽️";
+    }
+    
+    return "Mesa ocupada";
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
@@ -207,7 +221,7 @@ const Caixa = () => {
                           <p className="text-sm text-gray-500">{order.customer_name}</p>
                         )}
                         <p className="text-xs text-blue-600 font-medium mt-1">
-                          Status da Mesa: Cliente comendo 🍽️
+                          Status da Mesa: {getTableStatusMessage(order)}
                         </p>
                       </div>
                       <div className="text-right">

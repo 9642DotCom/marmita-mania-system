@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Users, Clock, Plus, Utensils, Trash2, Minus, LogOut } from 'lucide-react';
-import { useFallbackDatabase } from '@/hooks/useFallbackDatabase';
+import { useDatabase } from '@/hooks/useDatabase';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 
@@ -20,7 +21,7 @@ interface OrderItem {
 }
 
 const Garcon = () => {
-  const { useProducts, useTables, createOrder, createOrderItems, createTable } = useFallbackDatabase();
+  const { useProducts, useTables, createOrder, createOrderItems, createTable } = useDatabase();
   const { profile, signOut, loading } = useAuth();
   const { data: products = [], isLoading: productsLoading } = useProducts();
   const { data: tables = [], isLoading: tablesLoading } = useTables();
@@ -48,15 +49,15 @@ const Garcon = () => {
     );
   }
 
-  // If no profile or company_id, show error message
-  if (!profile || !profile.company_id) {
+  // If no profile, show error message
+  if (!profile) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="p-6 text-center">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Erro de Configuração</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Erro de Autenticação</h2>
             <p className="text-gray-600 mb-4">
-              Não foi possível carregar as informações da empresa. 
+              Não foi possível carregar as informações do usuário. 
               Tente fazer logout e login novamente.
             </p>
             <Button onClick={signOut} variant="outline">
@@ -221,7 +222,9 @@ const Garcon = () => {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Sistema do Garçom</h1>
             <p className="text-gray-600">Olá, {profile?.name || 'Garçom'}! Gerencie mesas e atendimento</p>
-            <p className="text-sm text-gray-500">Sistema funcionando em modo simplificado</p>
+            {profile?.role === 'admin' && (
+              <p className="text-sm text-green-600 font-medium">✅ Você tem acesso de administrador</p>
+            )}
           </div>
           <Button 
             onClick={signOut}

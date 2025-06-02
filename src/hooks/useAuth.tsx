@@ -66,6 +66,13 @@ export const useAuth = () => {
     try {
       console.log('Carregando perfil para usuário:', userId);
       
+      // Primeiro, tentar obter informações do usuário atual
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      const userEmail = userData.user?.email || '';
+      
+      // Detectar se é admin baseado no email
+      const isAdmin = userEmail.includes('admin') || userEmail.includes('rodrigo') || userEmail === 'rodrigo_nunes.182@hotmail.com';
+      
       // Tentar carregar o perfil do banco de dados
       const { data, error } = await supabase
         .from('profiles')
@@ -76,13 +83,7 @@ export const useAuth = () => {
       if (error) {
         console.error('Erro ao carregar perfil:', error);
         
-        // Tentar detectar se é admin pelo email ou outros métodos
-        const { data: userData } = await supabase.auth.getUser();
-        const userEmail = userData.user?.email || '';
-        
-        // Se email contém "admin" ou outros indicadores, definir como admin
-        const isAdmin = userEmail.includes('admin') || userEmail.includes('rodrigo');
-        
+        // Criar perfil padrão se não existir
         const defaultProfile = { 
           id: userId, 
           role: isAdmin ? 'admin' : 'garcon',
@@ -94,10 +95,8 @@ export const useAuth = () => {
         console.log('Criando perfil padrão:', defaultProfile);
         setProfile(defaultProfile);
         
-        // Só redirecionar se estamos na página de auth
+        // Redirecionar se estamos na página de auth
         const currentPath = window.location.pathname;
-        console.log('Caminho atual após erro:', currentPath);
-        
         if (currentPath === '/auth') {
           console.log('Redirecionando para role:', defaultProfile.role);
           setTimeout(() => {
@@ -107,7 +106,7 @@ export const useAuth = () => {
       } else if (data) {
         console.log('Perfil carregado com sucesso:', data);
         
-        // Se o perfil não tem company_id, definir um padrão
+        // Garantir que o perfil tem company_id
         const profileWithCompany = {
           ...data,
           company_id: data.company_id || 'default-company-id'
@@ -115,10 +114,8 @@ export const useAuth = () => {
         
         setProfile(profileWithCompany);
         
-        // Só redirecionar se estamos na página de auth
+        // Redirecionar se estamos na página de auth
         const currentPath = window.location.pathname;
-        console.log('Caminho atual:', currentPath);
-        
         if (currentPath === '/auth') {
           console.log('Iniciando redirecionamento para role:', profileWithCompany.role);
           setTimeout(() => {
@@ -127,11 +124,6 @@ export const useAuth = () => {
         }
       } else {
         console.log('Nenhum perfil encontrado, criando perfil padrão...');
-        
-        // Tentar detectar se é admin pelo email
-        const { data: userData } = await supabase.auth.getUser();
-        const userEmail = userData.user?.email || '';
-        const isAdmin = userEmail.includes('admin') || userEmail.includes('rodrigo');
         
         const defaultProfile = { 
           id: userId, 
@@ -154,10 +146,10 @@ export const useAuth = () => {
     } catch (error) {
       console.error('Erro crítico ao carregar perfil:', error);
       
-      // Em caso de erro crítico, tentar detectar admin
+      // Em caso de erro crítico, criar um perfil básico
       const { data: userData } = await supabase.auth.getUser();
       const userEmail = userData.user?.email || '';
-      const isAdmin = userEmail.includes('admin') || userEmail.includes('rodrigo');
+      const isAdmin = userEmail.includes('admin') || userEmail.includes('rodrigo') || userEmail === 'rodrigo_nunes.182@hotmail.com';
       
       const defaultProfile = { 
         id: userId, 

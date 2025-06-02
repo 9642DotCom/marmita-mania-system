@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Eye, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -44,7 +43,10 @@ const OrderManagement = () => {
     : orders.filter(order => order.status === statusFilter);
 
   const handleStatusChange = (orderId: string, newStatus: string) => {
-    updateOrderStatus.mutate({ id: orderId, status: newStatus });
+    updateOrderStatus.mutate({ 
+      id: orderId, 
+      status: newStatus as 'pendente' | 'preparando' | 'saiu_entrega' | 'entregue' | 'cancelado'
+    });
   };
 
   if (isLoading) {

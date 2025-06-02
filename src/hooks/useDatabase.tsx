@@ -1,9 +1,9 @@
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useAuthenticatedMutation } from './useAuthenticatedMutation';
 import { Product, Table, Order, Category } from '@/types/database';
-import { toast } from '@/hooks/use-toast';
 
 export const useDatabase = () => {
   const { profile } = useAuth();
@@ -35,10 +35,9 @@ export const useDatabase = () => {
     });
   };
 
-  const createCategory = useMutation({
+  const createCategory = useAuthenticatedMutation({
     mutationFn: async (categoryData: { name: string; description?: string }) => {
       if (!profile?.company_id) {
-        console.error('Company ID not found in profile:', profile);
         throw new Error('Erro: ID da empresa não encontrado. Tente fazer login novamente.');
       }
 
@@ -56,24 +55,10 @@ export const useDatabase = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-      toast({
-        title: "Categoria criada!",
-        description: "A categoria foi criada com sucesso.",
-      });
-    },
-    onError: (error: any) => {
-      console.error('Error creating category:', error);
-      toast({
-        title: "Erro ao criar categoria",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
+    queryKey: ['categories'],
   });
 
-  const updateCategory = useMutation({
+  const updateCategory = useAuthenticatedMutation({
     mutationFn: async ({ id, ...categoryData }: { id: string; name: string; description?: string }) => {
       const { data, error } = await supabase
         .from('categories')
@@ -85,16 +70,10 @@ export const useDatabase = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-      toast({
-        title: "Categoria atualizada!",
-        description: "A categoria foi atualizada com sucesso.",
-      });
-    },
+    queryKey: ['categories'],
   });
 
-  const deleteCategory = useMutation({
+  const deleteCategory = useAuthenticatedMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
         .from('categories')
@@ -103,13 +82,7 @@ export const useDatabase = () => {
 
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-      toast({
-        title: "Categoria deletada!",
-        description: "A categoria foi removida com sucesso.",
-      });
-    },
+    queryKey: ['categories'],
   });
 
   // Products hooks
@@ -144,7 +117,7 @@ export const useDatabase = () => {
     });
   };
 
-  const createProduct = useMutation({
+  const createProduct = useAuthenticatedMutation({
     mutationFn: async (productData: {
       name: string;
       description?: string;
@@ -155,7 +128,6 @@ export const useDatabase = () => {
       available?: boolean;
     }) => {
       if (!profile?.company_id) {
-        console.error('Company ID not found in profile:', profile);
         throw new Error('Erro: ID da empresa não encontrado. Tente fazer login novamente.');
       }
 
@@ -173,24 +145,10 @@ export const useDatabase = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      toast({
-        title: "Produto criado!",
-        description: "O produto foi criado com sucesso.",
-      });
-    },
-    onError: (error: any) => {
-      console.error('Error creating product:', error);
-      toast({
-        title: "Erro ao criar produto",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
+    queryKey: ['products'],
   });
 
-  const updateProduct = useMutation({
+  const updateProduct = useAuthenticatedMutation({
     mutationFn: async ({ id, ...productData }: {
       id: string;
       name: string;
@@ -211,16 +169,10 @@ export const useDatabase = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      toast({
-        title: "Produto atualizado!",
-        description: "O produto foi atualizado com sucesso.",
-      });
-    },
+    queryKey: ['products'],
   });
 
-  const deleteProduct = useMutation({
+  const deleteProduct = useAuthenticatedMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
         .from('products')
@@ -229,13 +181,7 @@ export const useDatabase = () => {
 
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      toast({
-        title: "Produto deletado!",
-        description: "O produto foi removido com sucesso.",
-      });
-    },
+    queryKey: ['products'],
   });
 
   // Tables hooks
@@ -302,7 +248,7 @@ export const useDatabase = () => {
     });
   };
 
-  const updateOrderStatus = useMutation({
+  const updateOrderStatus = useAuthenticatedMutation({
     mutationFn: async ({ id, status }: { id: string; status: 'pendente' | 'preparando' | 'saiu_entrega' | 'entregue' | 'cancelado' }) => {
       const { data, error } = await supabase
         .from('orders')
@@ -314,21 +260,7 @@ export const useDatabase = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-      toast({
-        title: "Status atualizado!",
-        description: "O status do pedido foi atualizado com sucesso.",
-      });
-    },
-    onError: (error: any) => {
-      console.error('Error updating order status:', error);
-      toast({
-        title: "Erro ao atualizar status",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
+    queryKey: ['orders'],
   });
 
   // User management (profiles)
@@ -357,14 +289,13 @@ export const useDatabase = () => {
     });
   };
 
-  const createUser = useMutation({
+  const createUser = useAuthenticatedMutation({
     mutationFn: async (userData: {
       name: string;
       email: string;
       role: string;
     }) => {
       if (!profile?.company_id) {
-        console.error('Company ID not found in profile:', profile);
         throw new Error('Erro: ID da empresa não encontrado. Tente fazer login novamente.');
       }
 
@@ -385,16 +316,10 @@ export const useDatabase = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast({
-        title: "Usuário criado!",
-        description: "O usuário foi criado com sucesso.",
-      });
-    },
+    queryKey: ['users'],
   });
 
-  const updateUser = useMutation({
+  const updateUser = useAuthenticatedMutation({
     mutationFn: async ({ id, ...userData }: {
       id: string;
       name: string;
@@ -411,16 +336,10 @@ export const useDatabase = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast({
-        title: "Usuário atualizado!",
-        description: "O usuário foi atualizado com sucesso.",
-      });
-    },
+    queryKey: ['users'],
   });
 
-  const deleteUser = useMutation({
+  const deleteUser = useAuthenticatedMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
         .from('profiles')
@@ -429,20 +348,13 @@ export const useDatabase = () => {
 
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast({
-        title: "Usuário deletado!",
-        description: "O usuário foi removido com sucesso.",
-      });
-    },
+    queryKey: ['users'],
   });
 
   // Create order
-  const createOrder = useMutation({
+  const createOrder = useAuthenticatedMutation({
     mutationFn: async (orderData: any) => {
       if (!profile?.company_id) {
-        console.error('Company ID not found in profile:', profile);
         throw new Error('Erro: ID da empresa não encontrado. Tente fazer login novamente.');
       }
 
@@ -468,25 +380,11 @@ export const useDatabase = () => {
       }
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-      toast({
-        title: "Pedido criado!",
-        description: "Pedido enviado para a cozinha com sucesso.",
-      });
-    },
-    onError: (error: any) => {
-      console.error('Error creating order:', error);
-      toast({
-        title: "Erro ao criar pedido",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
+    queryKey: ['orders'],
   });
 
   // Create order items
-  const createOrderItems = useMutation({
+  const createOrderItems = useAuthenticatedMutation({
     mutationFn: async ({ orderId, items }: { orderId: string, items: any[] }) => {
       const orderItems = items.map(item => ({
         order_id: orderId,
@@ -504,13 +402,13 @@ export const useDatabase = () => {
       if (error) throw error;
       return data;
     },
+    queryKey: ['orders'],
   });
 
   // Create table
-  const createTable = useMutation({
+  const createTable = useAuthenticatedMutation({
     mutationFn: async (tableData: any) => {
       if (!profile?.company_id) {
-        console.error('Company ID not found in profile:', profile);
         throw new Error('Erro: ID da empresa não encontrado. Tente fazer login novamente.');
       }
 
@@ -534,21 +432,7 @@ export const useDatabase = () => {
       }
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tables'] });
-      toast({
-        title: "Mesa adicionada!",
-        description: "A mesa foi criada com sucesso.",
-      });
-    },
-    onError: (error: any) => {
-      console.error('Error creating table:', error);
-      toast({
-        title: "Erro ao criar mesa",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
+    queryKey: ['tables'],
   });
 
   return {

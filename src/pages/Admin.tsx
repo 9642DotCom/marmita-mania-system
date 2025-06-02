@@ -5,9 +5,10 @@ import AdminSidebar from '@/components/admin/AdminSidebar';
 import ProductManagement from '@/components/admin/ProductManagement';
 import CategoryManagement from '@/components/admin/CategoryManagement';
 import OrderManagement from '@/components/admin/OrderManagement';
+import UserManagement from '@/components/admin/UserManagement';
 import AdminHeader from '@/components/admin/AdminHeader';
 
-export type AdminSection = 'products' | 'categories' | 'orders';
+export type AdminSection = 'products' | 'categories' | 'orders' | 'users';
 
 const Admin = () => {
   const [activeSection, setActiveSection] = useState<AdminSection>('orders');
@@ -20,6 +21,8 @@ const Admin = () => {
         return <CategoryManagement />;
       case 'orders':
         return <OrderManagement />;
+      case 'users':
+        return <UserManagement />;
       default:
         return <OrderManagement />;
     }

@@ -34,6 +34,11 @@ const menuItems = [
     title: 'Categorias',
     icon: Tag,
   },
+  {
+    id: 'users' as AdminSection,
+    title: 'Usuários',
+    icon: Users,
+  },
 ];
 
 const AdminSidebar = ({ activeSection, onSectionChange }: AdminSidebarProps) => {

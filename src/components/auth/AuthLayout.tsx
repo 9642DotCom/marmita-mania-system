@@ -2,7 +2,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
-import LoginForm from './LoginForm';
+import { useLocation } from 'react-router-dom';
+import RestaurantAuth from '@/pages/RestaurantAuth';
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -11,6 +12,7 @@ interface AuthLayoutProps {
 const AuthLayout = ({ children }: AuthLayoutProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const location = useLocation();
 
   useEffect(() => {
     // Verificar usuário atual
@@ -32,14 +34,23 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-red-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando...</p>
+        </div>
       </div>
     );
   }
 
+  // Se o usuário está na rota /auth, sempre mostrar a tela de autenticação
+  if (location.pathname === '/auth') {
+    return <RestaurantAuth />;
+  }
+
+  // Se não está logado e não está na rota /auth, redirecionar para login
   if (!user) {
-    return <LoginForm />;
+    return <RestaurantAuth />;
   }
 
   return <>{children}</>;

@@ -11,6 +11,7 @@ import Caixa from "./pages/Caixa";
 import Entregador from "./pages/Entregador";
 import Cozinha from "./pages/Cozinha";
 import Garcon from "./pages/Garcon";
+import RestaurantAuth from "./pages/RestaurantAuth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/entregador" element={<Entregador />} />
             <Route path="/cozinha" element={<Cozinha />} />
             <Route path="/garcon" element={<Garcon />} />
+            <Route path="/auth" element={<RestaurantAuth />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

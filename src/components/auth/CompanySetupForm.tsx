@@ -34,19 +34,10 @@ const CompanySetupForm = ({ user, onSetupComplete }: CompanySetupFormProps) => {
       console.log('Usuário atual:', currentUser);
 
       if (userError || !currentUser.user) {
-        console.log('Tentando fazer login novamente...');
-        // Se não estiver autenticado, tentar novamente
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: user.email,
-          password: user.password || 'temp' // Isso não vai funcionar, mas vamos tentar outra abordagem
-        });
-        
-        if (signInError) {
-          throw new Error('Erro de autenticação. Tente fazer login novamente.');
-        }
+        throw new Error('Erro de autenticação. Tente fazer login novamente.');
       }
 
-      const finalUser = currentUser.user || user;
+      const finalUser = currentUser.user;
 
       // 1. Criar empresa
       console.log('Criando empresa...');
@@ -72,26 +63,22 @@ const CompanySetupForm = ({ user, onSetupComplete }: CompanySetupFormProps) => {
 
       console.log('Empresa criada:', companyData);
 
-      // 2. Criar perfil do usuário como admin
-      console.log('Criando perfil como admin...');
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([
-          {
-            id: finalUser.id,
-            company_id: companyData.id,
-            name: user.user_metadata?.name || finalUser.email,
-            email: finalUser.email,
-            role: 'admin',
-          }
-        ]);
+      // 2. Atualizar metadados do usuário com role e company_id
+      console.log('Atualizando metadados do usuário...');
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: {
+          role: 'admin',
+          company_id: companyData.id,
+          name: user.user_metadata?.name || finalUser.email,
+        }
+      });
 
-      if (profileError) {
-        console.error('Erro ao criar perfil:', profileError);
-        throw profileError;
+      if (updateError) {
+        console.error('Erro ao atualizar metadados:', updateError);
+        throw updateError;
       }
 
-      console.log('Perfil criado com sucesso como admin');
+      console.log('Usuário configurado como admin da empresa');
 
       toast({
         title: "Restaurante configurado com sucesso!",

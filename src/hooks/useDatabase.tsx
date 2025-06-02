@@ -5,15 +5,16 @@ import { useAuth } from './useAuth';
 import { Product, Table, Order } from '@/types/database';
 
 export const useDatabase = () => {
-  const { profile } = useAuth();
+  const { getCompanyId, user } = useAuth();
   const queryClient = useQueryClient();
+  const companyId = getCompanyId();
 
   // Buscar produtos da empresa
   const useProducts = () => {
     return useQuery({
-      queryKey: ['products', profile?.company_id],
+      queryKey: ['products', companyId],
       queryFn: async () => {
-        if (!profile?.company_id) return [];
+        if (!companyId) return [];
         
         const { data, error } = await supabase
           .from('products')
@@ -24,42 +25,42 @@ export const useDatabase = () => {
               name
             )
           `)
-          .eq('company_id', profile.company_id)
+          .eq('company_id', companyId)
           .eq('available', true);
 
         if (error) throw error;
         return (data || []) as Product[];
       },
-      enabled: !!profile?.company_id,
+      enabled: !!companyId,
     });
   };
 
   // Buscar mesas da empresa
   const useTables = () => {
     return useQuery({
-      queryKey: ['tables', profile?.company_id],
+      queryKey: ['tables', companyId],
       queryFn: async () => {
-        if (!profile?.company_id) return [];
+        if (!companyId) return [];
         
         const { data, error } = await supabase
           .from('tables')
           .select('*')
-          .eq('company_id', profile.company_id)
+          .eq('company_id', companyId)
           .order('number');
 
         if (error) throw error;
         return (data || []) as Table[];
       },
-      enabled: !!profile?.company_id,
+      enabled: !!companyId,
     });
   };
 
   // Buscar pedidos da empresa
   const useOrders = () => {
     return useQuery({
-      queryKey: ['orders', profile?.company_id],
+      queryKey: ['orders', companyId],
       queryFn: async () => {
-        if (!profile?.company_id) return [];
+        if (!companyId) return [];
         
         const { data, error } = await supabase
           .from('orders')
@@ -68,34 +69,30 @@ export const useDatabase = () => {
             tables (
               id,
               number
-            ),
-            profiles (
-              id,
-              name
             )
           `)
-          .eq('company_id', profile.company_id)
+          .eq('company_id', companyId)
           .order('created_at', { ascending: false });
 
         if (error) throw error;
         return (data || []) as Order[];
       },
-      enabled: !!profile?.company_id,
+      enabled: !!companyId,
     });
   };
 
   // Criar pedido
   const createOrder = useMutation({
     mutationFn: async (orderData: any) => {
-      if (!profile?.company_id) throw new Error('Company ID not found');
+      if (!companyId) throw new Error('Company ID not found');
 
       const { data, error } = await supabase
         .from('orders')
         .insert([
           {
             ...orderData,
-            company_id: profile.company_id,
-            waiter_id: profile.id,
+            company_id: companyId,
+            waiter_id: user?.id,
           }
         ])
         .select()
@@ -133,14 +130,14 @@ export const useDatabase = () => {
   // Criar mesa
   const createTable = useMutation({
     mutationFn: async (tableData: any) => {
-      if (!profile?.company_id) throw new Error('Company ID not found');
+      if (!companyId) throw new Error('Company ID not found');
 
       const { data, error } = await supabase
         .from('tables')
         .insert([
           {
             ...tableData,
-            company_id: profile.company_id,
+            company_id: companyId,
           }
         ])
         .select()

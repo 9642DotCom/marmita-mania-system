@@ -2,22 +2,18 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
-import { Profile } from '@/types/database';
+
+export type UserRole = 'admin' | 'caixa' | 'entregador' | 'cozinha' | 'garcon';
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Verificar usuário atual
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
-      if (user) {
-        loadProfile(user.id);
-      } else {
-        setLoading(false);
-      }
+      setLoading(false);
     });
 
     // Escutar mudanças de autenticação
@@ -25,44 +21,23 @@ export const useAuth = () => {
       async (event, session) => {
         console.log('Auth state change:', event, session?.user?.id);
         setUser(session?.user ?? null);
-        if (session?.user) {
-          // Aguardar um pouco antes de carregar o perfil para dar tempo dos dados serem inseridos
-          setTimeout(() => {
-            loadProfile(session.user.id);
-          }, 500);
-        } else {
-          setProfile(null);
-          setLoading(false);
-        }
+        setLoading(false);
       }
     );
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const loadProfile = async (userId: string) => {
-    try {
-      console.log('Carregando perfil para usuário:', userId);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+  const getUserRole = (): UserRole | null => {
+    return user?.user_metadata?.role || null;
+  };
 
-      if (error) {
-        console.error('Erro ao carregar perfil:', error);
-        // Se não encontrar perfil, não é erro - usuário pode estar no fluxo de cadastro
-        setProfile(null);
-      } else {
-        console.log('Perfil carregado:', data);
-        setProfile(data as Profile);
-      }
-    } catch (error) {
-      console.error('Erro ao carregar perfil:', error);
-      setProfile(null);
-    } finally {
-      setLoading(false);
-    }
+  const getCompanyId = (): string | null => {
+    return user?.user_metadata?.company_id || null;
+  };
+
+  const isAdmin = (): boolean => {
+    return getUserRole() === 'admin';
   };
 
   const signOut = async () => {
@@ -71,8 +46,10 @@ export const useAuth = () => {
 
   return {
     user,
-    profile,
     loading,
+    getUserRole,
+    getCompanyId,
+    isAdmin,
     signOut,
   };
 };

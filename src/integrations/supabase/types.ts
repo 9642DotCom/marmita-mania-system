@@ -237,13 +237,6 @@ export type Database = {
             referencedRelation: "tables"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "orders_waiter_id_fkey"
-            columns: ["waiter_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       products: {
@@ -296,44 +289,6 @@ export type Database = {
           },
           {
             foreignKeyName: "products_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      profiles: {
-        Row: {
-          company_id: string
-          created_at: string | null
-          email: string
-          id: string
-          name: string
-          role: Database["public"]["Enums"]["user_role"]
-          updated_at: string | null
-        }
-        Insert: {
-          company_id: string
-          created_at?: string | null
-          email: string
-          id: string
-          name: string
-          role?: Database["public"]["Enums"]["user_role"]
-          updated_at?: string | null
-        }
-        Update: {
-          company_id?: string
-          created_at?: string | null
-          email?: string
-          id?: string
-          name?: string
-          role?: Database["public"]["Enums"]["user_role"]
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"

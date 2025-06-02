@@ -6,16 +6,9 @@ export interface Company {
   email?: string;
   phone?: string;
   address?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Profile {
-  id: string;
-  company_id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'caixa' | 'entregador' | 'cozinha' | 'garcon';
+  owner_id?: string;
+  logo_url?: string;
+  horario_funcionamento?: string;
   created_at: string;
   updated_at: string;
 }
@@ -68,7 +61,6 @@ export interface Order {
   created_at: string;
   updated_at: string;
   tables?: Table;
-  profiles?: Profile;
 }
 
 export interface OrderItem {

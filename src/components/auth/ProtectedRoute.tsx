@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps) => {
-  const { user, profile, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
 
   if (loading) {
     return (
@@ -22,7 +22,7 @@ const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps)
     return <div>Acesso negado. Faça login primeiro.</div>;
   }
 
-  if (requireAdmin && profile?.role !== 'admin') {
+  if (requireAdmin && !isAdmin()) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

@@ -17,7 +17,7 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => {
-  const { user, profile, loading } = useAuth();
+  const { user, loading, getUserRole, isAdmin } = useAuth();
 
   if (loading) {
     return (
@@ -27,6 +27,8 @@ const App = () => {
     );
   }
 
+  const userRole = getUserRole();
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -34,16 +36,16 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Rota de autenticação - permite usuários logados sem perfil (fluxo de cadastro) */}
-            <Route path="/auth" element={!user || !profile ? <Auth /> : <Navigate to="/" replace />} />
+            {/* Rota de autenticação */}
+            <Route path="/auth" element={!user ? <Auth /> : <Navigate to="/" replace />} />
             
-            {/* Rotas protegidas - requer usuário E perfil */}
-            <Route path="/" element={user && profile ? <Index /> : <Navigate to="/auth" replace />} />
-            <Route path="/admin" element={user && profile ? <Admin /> : <Navigate to="/auth" replace />} />
-            <Route path="/caixa" element={user && profile ? <Caixa /> : <Navigate to="/auth" replace />} />
-            <Route path="/entregador" element={user && profile ? <Entregador /> : <Navigate to="/auth" replace />} />
-            <Route path="/cozinha" element={user && profile ? <Cozinha /> : <Navigate to="/auth" replace />} />
-            <Route path="/garcon" element={user && profile ? <Garcon /> : <Navigate to="/auth" replace />} />
+            {/* Rotas protegidas */}
+            <Route path="/" element={user && userRole ? <Index /> : <Navigate to="/auth" replace />} />
+            <Route path="/admin" element={user && isAdmin() ? <Admin /> : <Navigate to="/auth" replace />} />
+            <Route path="/caixa" element={user && userRole === 'caixa' ? <Caixa /> : <Navigate to="/auth" replace />} />
+            <Route path="/entregador" element={user && userRole === 'entregador' ? <Entregador /> : <Navigate to="/auth" replace />} />
+            <Route path="/cozinha" element={user && userRole === 'cozinha' ? <Cozinha /> : <Navigate to="/auth" replace />} />
+            <Route path="/garcon" element={user && userRole === 'garcon' ? <Garcon /> : <Navigate to="/auth" replace />} />
             
             {/* Página não encontrada */}
             <Route path="*" element={<NotFound />} />

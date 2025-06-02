@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useDatabase } from '@/hooks/useDatabase';
+import ImageUpload from './ImageUpload';
 
 interface ProductFormProps {
   isOpen: boolean;
@@ -51,6 +52,14 @@ const ProductForm = ({ isOpen, onClose, product }: ProductFormProps) => {
       });
     }
   }, [product]);
+
+  const handleImageChange = (url: string) => {
+    setFormData({ ...formData, image_url: url });
+  };
+
+  const handleImageRemove = () => {
+    setFormData({ ...formData, image_url: '' });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,6 +135,15 @@ const ProductForm = ({ isOpen, onClose, product }: ProductFormProps) => {
               />
             </div>
 
+            <div className="space-y-2">
+              <Label>Imagem do Produto</Label>
+              <ImageUpload
+                currentImageUrl={formData.image_url}
+                onImageChange={handleImageChange}
+                onImageRemove={handleImageRemove}
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="price">Preço *</Label>
@@ -154,16 +172,6 @@ const ProductForm = ({ isOpen, onClose, product }: ProductFormProps) => {
                   ))}
                 </select>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="image">URL da Imagem</Label>
-              <Input
-                id="image"
-                value={formData.image_url}
-                onChange={(e) => setFormData({...formData, image_url: e.target.value})}
-                placeholder="https://exemplo.com/imagem.jpg"
-              />
             </div>
 
             <div className="space-y-2">

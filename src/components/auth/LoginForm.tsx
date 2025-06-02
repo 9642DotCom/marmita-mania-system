@@ -7,15 +7,16 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Building2 } from 'lucide-react';
+import SignUpForm from './SignUpForm';
+import CompanySetupForm from './CompanySetupForm';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [companyName, setCompanyName] = useState('');
-  const [userName, setUserName] = useState('');
+  const [currentStep, setCurrentStep] = useState<'login' | 'signup' | 'company-setup'>('login');
+  const [newUser, setNewUser] = useState<any>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,85 +45,36 @@ const LoginForm = () => {
     }
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      // 1. Criar usuário primeiro
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name: userName,
-            company_name: companyName,
-          }
-        }
-      });
-
-      if (authError) throw authError;
-
-      if (authData.user) {
-        // 2. Aguardar um pouco para garantir que o usuário foi criado
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // 3. Fazer login temporário para ter acesso autenticado
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (signInError) throw signInError;
-
-        // 4. Criar empresa (agora com usuário autenticado)
-        const { data: companyData, error: companyError } = await supabase
-          .from('companies')
-          .insert([
-            {
-              name: companyName,
-              email: email,
-            }
-          ])
-          .select()
-          .single();
-
-        if (companyError) throw companyError;
-
-        // 5. Criar perfil do usuário vinculado à empresa
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: authData.user.id,
-              company_id: companyData.id,
-              name: userName,
-              email: email,
-              role: 'admin',
-            }
-          ]);
-
-        if (profileError) throw profileError;
-
-        toast({
-          title: "Conta criada com sucesso!",
-          description: "Sua empresa foi configurada. Você já está logado!",
-        });
-
-        // Recarregar a página para atualizar o estado
-        window.location.reload();
-      }
-    } catch (error: any) {
-      console.error('Erro detalhado:', error);
-      toast({
-        title: "Erro ao criar conta",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+  const handleSignUpSuccess = (user: any) => {
+    setNewUser(user);
+    setCurrentStep('company-setup');
   };
+
+  const handleCompanySetupComplete = () => {
+    window.location.href = '/admin';
+  };
+
+  if (currentStep === 'signup') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <SignUpForm 
+          onSignUpSuccess={handleSignUpSuccess}
+          onBackToLogin={() => setCurrentStep('login')}
+        />
+      </div>
+    );
+  }
+
+  if (currentStep === 'company-setup') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <CompanySetupForm 
+          user={newUser}
+          onSetupComplete={handleCompanySetupComplete}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -131,45 +83,14 @@ const LoginForm = () => {
           <div className="flex justify-center mb-4">
             <Building2 className="h-12 w-12 text-orange-600" />
           </div>
-          <CardTitle className="text-2xl">
-            {isSignUp ? 'Criar Conta' : 'Fazer Login'}
-          </CardTitle>
+          <CardTitle className="text-2xl">Fazer Login</CardTitle>
           <p className="text-gray-600">
-            {isSignUp 
-              ? 'Configure sua empresa e crie sua conta'
-              : 'Entre na sua conta para continuar'
-            }
+            Entre na sua conta para continuar
           </p>
         </CardHeader>
         
         <CardContent>
-          <form onSubmit={isSignUp ? handleSignUp : handleLogin} className="space-y-4">
-            {isSignUp && (
-              <>
-                <div>
-                  <Label htmlFor="companyName">Nome da Empresa</Label>
-                  <Input
-                    id="companyName"
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    placeholder="Ex: Restaurante do João"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="userName">Seu Nome</Label>
-                  <Input
-                    id="userName"
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
-                    placeholder="Ex: João Silva"
-                    required
-                  />
-                </div>
-              </>
-            )}
-            
+          <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <Label htmlFor="email">Email</Label>
               <Input
@@ -217,20 +138,17 @@ const LoginForm = () => {
               {loading ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
               ) : null}
-              {isSignUp ? 'Criar Conta' : 'Entrar'}
+              Entrar
             </Button>
           </form>
 
           <div className="mt-4 text-center">
             <Button
               variant="link"
-              onClick={() => setIsSignUp(!isSignUp)}
+              onClick={() => setCurrentStep('signup')}
               className="text-orange-600"
             >
-              {isSignUp 
-                ? 'Já tem uma conta? Fazer login'
-                : 'Não tem conta? Criar empresa'
-              }
+              Não tem conta? Criar empresa
             </Button>
           </div>
         </CardContent>

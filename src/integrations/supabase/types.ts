@@ -49,8 +49,11 @@ export type Database = {
           address: string | null
           created_at: string | null
           email: string | null
+          horario_funcionamento: string | null
           id: string
+          logo_url: string | null
           name: string
+          owner_id: string | null
           phone: string | null
           updated_at: string | null
         }
@@ -58,8 +61,11 @@ export type Database = {
           address?: string | null
           created_at?: string | null
           email?: string | null
+          horario_funcionamento?: string | null
           id?: string
+          logo_url?: string | null
           name: string
+          owner_id?: string | null
           phone?: string | null
           updated_at?: string | null
         }
@@ -67,8 +73,11 @@ export type Database = {
           address?: string | null
           created_at?: string | null
           email?: string | null
+          horario_funcionamento?: string | null
           id?: string
+          logo_url?: string | null
           name?: string
+          owner_id?: string | null
           phone?: string | null
           updated_at?: string | null
         }
@@ -377,6 +386,10 @@ export type Database = {
     Functions: {
       can_view_company_profiles: {
         Args: { target_company_id: string }
+        Returns: boolean
+      }
+      is_company_admin: {
+        Args: { company_uuid: string }
         Returns: boolean
       }
     }

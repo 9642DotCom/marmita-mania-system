@@ -49,7 +49,7 @@ const LoginForm = () => {
     setLoading(true);
 
     try {
-      // 1. Criar usuário
+      // 1. Criar usuário primeiro
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -64,7 +64,18 @@ const LoginForm = () => {
       if (authError) throw authError;
 
       if (authData.user) {
-        // 2. Criar empresa
+        // 2. Aguardar um pouco para garantir que o usuário foi criado
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // 3. Fazer login temporário para ter acesso autenticado
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (signInError) throw signInError;
+
+        // 4. Criar empresa (agora com usuário autenticado)
         const { data: companyData, error: companyError } = await supabase
           .from('companies')
           .insert([
@@ -78,7 +89,7 @@ const LoginForm = () => {
 
         if (companyError) throw companyError;
 
-        // 3. Criar perfil do usuário
+        // 5. Criar perfil do usuário vinculado à empresa
         const { error: profileError } = await supabase
           .from('profiles')
           .insert([
@@ -95,12 +106,14 @@ const LoginForm = () => {
 
         toast({
           title: "Conta criada com sucesso!",
-          description: "Sua empresa foi configurada. Faça login para continuar.",
+          description: "Sua empresa foi configurada. Você já está logado!",
         });
 
-        setIsSignUp(false);
+        // Recarregar a página para atualizar o estado
+        window.location.reload();
       }
     } catch (error: any) {
+      console.error('Erro detalhado:', error);
       toast({
         title: "Erro ao criar conta",
         description: error.message,

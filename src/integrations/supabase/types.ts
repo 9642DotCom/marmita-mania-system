@@ -375,7 +375,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_view_company_profiles: {
+        Args: { target_company_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       order_status:

@@ -51,11 +51,12 @@ export const useAuth = () => {
 
       if (error) {
         console.error('Erro ao carregar perfil:', error);
-        throw error;
+        // Se não encontrar perfil, não é erro - usuário pode estar no fluxo de cadastro
+        setProfile(null);
+      } else {
+        console.log('Perfil carregado:', data);
+        setProfile(data as Profile);
       }
-      
-      console.log('Perfil carregado:', data);
-      setProfile(data as Profile);
     } catch (error) {
       console.error('Erro ao carregar perfil:', error);
       setProfile(null);

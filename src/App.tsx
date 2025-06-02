@@ -34,16 +34,16 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Rota de autenticação */}
-            <Route path="/auth" element={!user ? <Auth /> : <Navigate to="/" replace />} />
+            {/* Rota de autenticação - permite usuários logados sem perfil (fluxo de cadastro) */}
+            <Route path="/auth" element={!user || !profile ? <Auth /> : <Navigate to="/" replace />} />
             
-            {/* Rotas protegidas */}
-            <Route path="/" element={user ? <Index /> : <Navigate to="/auth" replace />} />
-            <Route path="/admin" element={user ? <Admin /> : <Navigate to="/auth" replace />} />
-            <Route path="/caixa" element={user ? <Caixa /> : <Navigate to="/auth" replace />} />
-            <Route path="/entregador" element={user ? <Entregador /> : <Navigate to="/auth" replace />} />
-            <Route path="/cozinha" element={user ? <Cozinha /> : <Navigate to="/auth" replace />} />
-            <Route path="/garcon" element={user ? <Garcon /> : <Navigate to="/auth" replace />} />
+            {/* Rotas protegidas - requer usuário E perfil */}
+            <Route path="/" element={user && profile ? <Index /> : <Navigate to="/auth" replace />} />
+            <Route path="/admin" element={user && profile ? <Admin /> : <Navigate to="/auth" replace />} />
+            <Route path="/caixa" element={user && profile ? <Caixa /> : <Navigate to="/auth" replace />} />
+            <Route path="/entregador" element={user && profile ? <Entregador /> : <Navigate to="/auth" replace />} />
+            <Route path="/cozinha" element={user && profile ? <Cozinha /> : <Navigate to="/auth" replace />} />
+            <Route path="/garcon" element={user && profile ? <Garcon /> : <Navigate to="/auth" replace />} />
             
             {/* Página não encontrada */}
             <Route path="*" element={<NotFound />} />

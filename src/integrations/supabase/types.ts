@@ -296,6 +296,44 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          role: string
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          email: string
+          id: string
+          name: string
+          role: string
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          role?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tables: {
         Row: {
           available: boolean | null

@@ -91,7 +91,7 @@ const LoginForm = () => {
 
         // 5. Criar perfil do usuário vinculado à empresa
         const { error: profileError } = await supabase
-          .from('profiles')
+          .from('profiles' as any)
           .insert([
             {
               id: authData.user.id,

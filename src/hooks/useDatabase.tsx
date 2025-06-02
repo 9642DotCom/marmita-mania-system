@@ -68,17 +68,13 @@ export const useDatabase = () => {
             tables (
               id,
               number
-            ),
-            profiles (
-              id,
-              name
             )
           `)
           .eq('company_id', profile.company_id)
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-        return (data || []) as Order[];
+        return (data || []) as any[];
       },
       enabled: !!profile?.company_id,
     });

@@ -39,13 +39,13 @@ export const useAuth = () => {
   const loadProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('profiles' as any)
         .select('*')
         .eq('id', userId)
         .single();
 
       if (error) throw error;
-      setProfile(data as Profile);
+      setProfile(data);
     } catch (error) {
       console.error('Erro ao carregar perfil:', error);
     } finally {

@@ -210,6 +210,46 @@ export const useAuth = () => {
     }
   };
 
+  useEffect(() => {
+    console.log('Inicializando useAuth...');
+    
+    // Verificar usuário atual
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      console.log('Usuário atual detectado:', user?.id);
+      setUser(user);
+      if (user) {
+        loadProfile(user.id);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    // Escutar mudanças de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id, 'Current path:', window.location.pathname);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          console.log('Usuário logado, carregando perfil...');
+          loadProfile(session.user.id);
+        } else {
+          console.log('Usuário deslogado');
+          setProfile(null);
+          setLoading(false);
+        }
+      }
+    );
+
+    // Configurar verificação periódica do token (a cada 10 minutos)
+    const tokenCheckInterval = setInterval(refreshTokenIfNeeded, 10 * 60 * 1000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearInterval(tokenCheckInterval);
+    };
+  }, []);
+
   const redirectBasedOnRole = (role: string) => {
     console.log('Executando redirecionamento para role:', role, 'da página:', window.location.pathname);
     
@@ -241,6 +281,43 @@ export const useAuth = () => {
     }
   };
 
+  const signIn = async (email: string, password: string) => {
+    try {
+      console.log('Tentando fazer login...');
+      cleanupAuthState();
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      return { data, error };
+    } catch (error) {
+      console.error('Erro ao fazer login:', error);
+      return { data: null, error };
+    }
+  };
+
+  const signUp = async (email: string, password: string, metadata?: any) => {
+    try {
+      console.log('Tentando criar conta...');
+      cleanupAuthState();
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: metadata
+        }
+      });
+      
+      return { data, error };
+    } catch (error) {
+      console.error('Erro ao criar conta:', error);
+      return { data: null, error };
+    }
+  };
+
   const signOut = async () => {
     try {
       console.log('Iniciando logout...');
@@ -264,6 +341,8 @@ export const useAuth = () => {
     user,
     profile,
     loading,
+    signIn,
+    signUp,
     signOut,
     redirectBasedOnRole,
     refreshTokenIfNeeded,

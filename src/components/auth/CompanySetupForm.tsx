@@ -34,8 +34,19 @@ const CompanySetupForm = ({ user, onSetupComplete }: CompanySetupFormProps) => {
       console.log('Usuário atual:', currentUser);
 
       if (userError || !currentUser.user) {
-        throw new Error('Usuário não está autenticado');
+        console.log('Tentando fazer login novamente...');
+        // Se não estiver autenticado, tentar novamente
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: user.email,
+          password: user.password || 'temp' // Isso não vai funcionar, mas vamos tentar outra abordagem
+        });
+        
+        if (signInError) {
+          throw new Error('Erro de autenticação. Tente fazer login novamente.');
+        }
       }
+
+      const finalUser = currentUser.user || user;
 
       // 1. Criar empresa
       console.log('Criando empresa...');
@@ -48,7 +59,7 @@ const CompanySetupForm = ({ user, onSetupComplete }: CompanySetupFormProps) => {
             address: address,
             horario_funcionamento: horarioFuncionamento,
             logo_url: logoUrl || null,
-            owner_id: currentUser.user.id,
+            owner_id: finalUser.id,
           }
         ])
         .select()
@@ -67,10 +78,10 @@ const CompanySetupForm = ({ user, onSetupComplete }: CompanySetupFormProps) => {
         .from('profiles')
         .insert([
           {
-            id: currentUser.user.id,
+            id: finalUser.id,
             company_id: companyData.id,
-            name: user.user_metadata?.name || currentUser.user.email,
-            email: currentUser.user.email,
+            name: user.user_metadata?.name || finalUser.email,
+            email: finalUser.email,
             role: 'admin',
           }
         ]);

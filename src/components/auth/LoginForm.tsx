@@ -35,8 +35,10 @@ const LoginForm = () => {
         description: "Bem-vindo de volta!",
       });
 
-      // Redirecionar para a página principal
-      window.location.href = '/';
+      // Aguardar um pouco para o perfil carregar
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1000);
     } catch (error: any) {
       toast({
         title: "Erro no login",
@@ -49,14 +51,17 @@ const LoginForm = () => {
   };
 
   const handleSignUpSuccess = (user: any) => {
-    console.log('Usuário criado com sucesso:', user);
+    console.log('Usuário criado com sucesso, indo para configuração da empresa:', user);
     setNewUser(user);
     setCurrentStep('company-setup');
   };
 
   const handleCompanySetupComplete = () => {
-    console.log('Configuração da empresa finalizada, redirecionando...');
-    window.location.href = '/admin';
+    console.log('Configuração da empresa finalizada, redirecionando para admin...');
+    // Aguardar um pouco para os dados serem processados
+    setTimeout(() => {
+      window.location.href = '/admin';
+    }, 1500);
   };
 
   if (currentStep === 'signup') {

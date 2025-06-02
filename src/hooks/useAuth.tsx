@@ -2,14 +2,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
-
-interface Profile {
-  id: string;
-  company_id: string;
-  name: string;
-  email: string;
-  role: string;
-}
+import { Profile } from '@/types/database';
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -46,13 +39,13 @@ export const useAuth = () => {
   const loadProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('profiles' as any)
         .select('*')
         .eq('id', userId)
         .single();
 
       if (error) throw error;
-      setProfile(data);
+      setProfile(data as Profile);
     } catch (error) {
       console.error('Erro ao carregar perfil:', error);
     } finally {

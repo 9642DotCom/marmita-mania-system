@@ -21,9 +21,9 @@ interface OrderItem {
 
 const Garcon = () => {
   const { useProducts, useTables, createOrder, createOrderItems, createTable } = useDatabase();
-  const { profile, signOut } = useAuth();
-  const { data: products = [] } = useProducts();
-  const { data: tables = [] } = useTables();
+  const { profile, signOut, loading } = useAuth();
+  const { data: products = [], isLoading: productsLoading } = useProducts();
+  const { data: tables = [], isLoading: tablesLoading } = useTables();
 
   const [newOrder, setNewOrder] = useState({
     tableId: '',
@@ -38,6 +38,36 @@ const Garcon = () => {
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [showAddTableForm, setShowAddTableForm] = useState(false);
   const [newTableNumber, setNewTableNumber] = useState('');
+
+  // Loading state while profile is being loaded
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+      </div>
+    );
+  }
+
+  // If no profile or company_id, show error message
+  if (!profile || !profile.company_id) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-6 text-center">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Erro de Configuração</h2>
+            <p className="text-gray-600 mb-4">
+              Não foi possível carregar as informações da empresa. 
+              Tente fazer logout e login novamente.
+            </p>
+            <Button onClick={signOut} variant="outline">
+              <LogOut className="h-4 w-4 mr-2" />
+              Sair e Tentar Novamente
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const addItemToOrder = () => {
     if (!selectedProductId) return;
@@ -96,6 +126,11 @@ const Garcon = () => {
     }
 
     try {
+      console.log('Starting order creation process...');
+      console.log('Profile:', profile);
+      console.log('Order data:', newOrder);
+      console.log('Order items:', orderItems);
+
       // Criar pedido
       const orderData = {
         table_id: newOrder.tableId,
@@ -106,7 +141,9 @@ const Garcon = () => {
         status: 'pendente' as const,
       };
 
+      console.log('Creating order with data:', orderData);
       const order = await createOrder.mutateAsync(orderData);
+      console.log('Order created successfully:', order);
 
       // Criar itens do pedido
       await createOrderItems.mutateAsync({
@@ -119,21 +156,13 @@ const Garcon = () => {
         }))
       });
 
-      toast({
-        title: "Pedido criado!",
-        description: "Pedido enviado para a cozinha com sucesso.",
-      });
-
       // Limpar formulário
       setNewOrder({ tableId: '', customers: '', notes: '', customer_name: '', customer_phone: '' });
       setOrderItems([]);
       setShowOrderForm(false);
     } catch (error: any) {
-      toast({
-        title: "Erro ao criar pedido",
-        description: error.message,
-        variant: "destructive"
-      });
+      console.error('Error in handleNewOrder:', error);
+      // Error is already handled by the mutation
     }
   };
 
@@ -141,24 +170,18 @@ const Garcon = () => {
     e.preventDefault();
     if (newTableNumber.trim()) {
       try {
+        console.log('Adding new table with number:', newTableNumber);
+        
         await createTable.mutateAsync({
           number: parseInt(newTableNumber.replace(/\D/g, '')) || tables.length + 1,
           capacity: 4,
         });
 
-        toast({
-          title: "Mesa adicionada!",
-          description: `${newTableNumber} foi criada com sucesso.`,
-        });
-
         setNewTableNumber('');
         setShowAddTableForm(false);
       } catch (error: any) {
-        toast({
-          title: "Erro ao criar mesa",
-          description: error.message,
-          variant: "destructive"
-        });
+        console.error('Error in handleAddTable:', error);
+        // Error is already handled by the mutation
       }
     }
   };
@@ -198,6 +221,9 @@ const Garcon = () => {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Sistema do Garçom</h1>
             <p className="text-gray-600">Olá, {profile?.name}! Gerencie mesas e atendimento</p>
+            {profile?.company_id && (
+              <p className="text-sm text-gray-500">Empresa ID: {profile.company_id}</p>
+            )}
           </div>
           <Button 
             onClick={signOut}
@@ -208,6 +234,13 @@ const Garcon = () => {
             Sair
           </Button>
         </div>
+
+        {/* Show loading state for data */}
+        {(productsLoading || tablesLoading) && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-blue-700">Carregando dados da empresa...</p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
           <Card>

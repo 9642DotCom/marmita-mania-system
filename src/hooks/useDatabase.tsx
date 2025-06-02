@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -14,7 +13,10 @@ export const useDatabase = () => {
     return useQuery({
       queryKey: ['categories', profile?.company_id],
       queryFn: async () => {
-        if (!profile?.company_id) return [];
+        if (!profile?.company_id) {
+          console.log('No company_id found in profile, skipping categories query');
+          return [];
+        }
         
         const { data, error } = await supabase
           .from('categories')
@@ -22,7 +24,10 @@ export const useDatabase = () => {
           .eq('company_id', profile.company_id)
           .order('name');
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching categories:', error);
+          throw error;
+        }
         return (data || []) as Category[];
       },
       enabled: !!profile?.company_id,
@@ -31,7 +36,10 @@ export const useDatabase = () => {
 
   const createCategory = useMutation({
     mutationFn: async (categoryData: { name: string; description?: string }) => {
-      if (!profile?.company_id) throw new Error('Company ID not found');
+      if (!profile?.company_id) {
+        console.error('Company ID not found in profile:', profile);
+        throw new Error('Erro: ID da empresa não encontrado. Tente fazer login novamente.');
+      }
 
       const { data, error } = await supabase
         .from('categories')
@@ -52,6 +60,14 @@ export const useDatabase = () => {
       toast({
         title: "Categoria criada!",
         description: "A categoria foi criada com sucesso.",
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error creating category:', error);
+      toast({
+        title: "Erro ao criar categoria",
+        description: error.message,
+        variant: "destructive",
       });
     },
   });
@@ -100,7 +116,10 @@ export const useDatabase = () => {
     return useQuery({
       queryKey: ['products', profile?.company_id],
       queryFn: async () => {
-        if (!profile?.company_id) return [];
+        if (!profile?.company_id) {
+          console.log('No company_id found in profile, skipping products query');
+          return [];
+        }
         
         const { data, error } = await supabase
           .from('products')
@@ -114,7 +133,10 @@ export const useDatabase = () => {
           .eq('company_id', profile.company_id)
           .order('name');
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching products:', error);
+          throw error;
+        }
         return (data || []) as Product[];
       },
       enabled: !!profile?.company_id,
@@ -131,7 +153,10 @@ export const useDatabase = () => {
       ingredients?: string[];
       available?: boolean;
     }) => {
-      if (!profile?.company_id) throw new Error('Company ID not found');
+      if (!profile?.company_id) {
+        console.error('Company ID not found in profile:', profile);
+        throw new Error('Erro: ID da empresa não encontrado. Tente fazer login novamente.');
+      }
 
       const { data, error } = await supabase
         .from('products')
@@ -152,6 +177,14 @@ export const useDatabase = () => {
       toast({
         title: "Produto criado!",
         description: "O produto foi criado com sucesso.",
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error creating product:', error);
+      toast({
+        title: "Erro ao criar produto",
+        description: error.message,
+        variant: "destructive",
       });
     },
   });
@@ -209,7 +242,10 @@ export const useDatabase = () => {
     return useQuery({
       queryKey: ['tables', profile?.company_id],
       queryFn: async () => {
-        if (!profile?.company_id) return [];
+        if (!profile?.company_id) {
+          console.log('No company_id found in profile, skipping tables query');
+          return [];
+        }
         
         const { data, error } = await supabase
           .from('tables')
@@ -217,7 +253,10 @@ export const useDatabase = () => {
           .eq('company_id', profile.company_id)
           .order('number');
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching tables:', error);
+          throw error;
+        }
         return (data || []) as Table[];
       },
       enabled: !!profile?.company_id,
@@ -229,7 +268,10 @@ export const useDatabase = () => {
     return useQuery({
       queryKey: ['orders', profile?.company_id],
       queryFn: async () => {
-        if (!profile?.company_id) return [];
+        if (!profile?.company_id) {
+          console.log('No company_id found in profile, skipping orders query');
+          return [];
+        }
         
         const { data, error } = await supabase
           .from('orders')
@@ -243,7 +285,10 @@ export const useDatabase = () => {
           .eq('company_id', profile.company_id)
           .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching orders:', error);
+          throw error;
+        }
         return (data || []) as Order[];
       },
       enabled: !!profile?.company_id,
@@ -269,6 +314,14 @@ export const useDatabase = () => {
         description: "O status do pedido foi atualizado com sucesso.",
       });
     },
+    onError: (error: any) => {
+      console.error('Error updating order status:', error);
+      toast({
+        title: "Erro ao atualizar status",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   // User management (profiles)
@@ -276,7 +329,10 @@ export const useDatabase = () => {
     return useQuery({
       queryKey: ['users', profile?.company_id],
       queryFn: async () => {
-        if (!profile?.company_id) return [];
+        if (!profile?.company_id) {
+          console.log('No company_id found in profile, skipping users query');
+          return [];
+        }
         
         const { data, error } = await supabase
           .from('profiles')
@@ -284,7 +340,10 @@ export const useDatabase = () => {
           .eq('company_id', profile.company_id)
           .order('name');
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching users:', error);
+          throw error;
+        }
         return (data || []);
       },
       enabled: !!profile?.company_id,
@@ -297,7 +356,10 @@ export const useDatabase = () => {
       email: string;
       role: string;
     }) => {
-      if (!profile?.company_id) throw new Error('Company ID not found');
+      if (!profile?.company_id) {
+        console.error('Company ID not found in profile:', profile);
+        throw new Error('Erro: ID da empresa não encontrado. Tente fazer login novamente.');
+      }
 
       // Note: In a real implementation, you would create the auth user first
       // For now, we'll just create a profile entry
@@ -372,7 +434,14 @@ export const useDatabase = () => {
   // Create order
   const createOrder = useMutation({
     mutationFn: async (orderData: any) => {
-      if (!profile?.company_id) throw new Error('Company ID not found');
+      if (!profile?.company_id) {
+        console.error('Company ID not found in profile:', profile);
+        throw new Error('Erro: ID da empresa não encontrado. Tente fazer login novamente.');
+      }
+
+      console.log('Creating order with data:', orderData);
+      console.log('Using company_id:', profile.company_id);
+      console.log('Using waiter_id:', profile.id);
 
       const { data, error } = await supabase
         .from('orders')
@@ -386,11 +455,26 @@ export const useDatabase = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating order:', error);
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+      toast({
+        title: "Pedido criado!",
+        description: "Pedido enviado para a cozinha com sucesso.",
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error creating order:', error);
+      toast({
+        title: "Erro ao criar pedido",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -418,7 +502,13 @@ export const useDatabase = () => {
   // Create table
   const createTable = useMutation({
     mutationFn: async (tableData: any) => {
-      if (!profile?.company_id) throw new Error('Company ID not found');
+      if (!profile?.company_id) {
+        console.error('Company ID not found in profile:', profile);
+        throw new Error('Erro: ID da empresa não encontrado. Tente fazer login novamente.');
+      }
+
+      console.log('Creating table with data:', tableData);
+      console.log('Using company_id:', profile.company_id);
 
       const { data, error } = await supabase
         .from('tables')
@@ -431,11 +521,26 @@ export const useDatabase = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating table:', error);
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tables'] });
+      toast({
+        title: "Mesa adicionada!",
+        description: "A mesa foi criada com sucesso.",
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error creating table:', error);
+      toast({
+        title: "Erro ao criar mesa",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 

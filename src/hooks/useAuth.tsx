@@ -66,8 +66,14 @@ export const useAuth = () => {
     try {
       console.log('Carregando perfil para usuário:', userId);
       
-      // Primeiro, tentar obter informações do usuário atual
+      // Primeiro, obter informações do usuário atual
       const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        console.error('Erro ao obter dados do usuário:', userError);
+        setLoading(false);
+        return;
+      }
+
       const userEmail = userData.user?.email || '';
       
       // Detectar se é admin baseado no email
@@ -89,19 +95,22 @@ export const useAuth = () => {
           role: isAdmin ? 'admin' : 'garcon',
           name: isAdmin ? 'Administrador' : 'Garçom',
           email: userEmail,
-          company_id: 'default-company-id'
+          company_id: 'default-company-id',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         } as Profile;
         
         console.log('Criando perfil padrão:', defaultProfile);
         setProfile(defaultProfile);
         
-        // Redirecionar se estamos na página de auth
-        const currentPath = window.location.pathname;
-        if (currentPath === '/auth') {
-          console.log('Redirecionando para role:', defaultProfile.role);
-          setTimeout(() => {
-            redirectBasedOnRole(defaultProfile.role);
-          }, 100);
+        // Tentar inserir o perfil no banco de dados
+        try {
+          await supabase
+            .from('profiles')
+            .insert([defaultProfile]);
+          console.log('Perfil inserido no banco de dados com sucesso');
+        } catch (insertError) {
+          console.log('Erro ao inserir perfil no banco, mas continuando com perfil em memória:', insertError);
         }
       } else if (data) {
         console.log('Perfil carregado com sucesso:', data);
@@ -113,15 +122,6 @@ export const useAuth = () => {
         } as Profile;
         
         setProfile(profileWithCompany);
-        
-        // Redirecionar se estamos na página de auth
-        const currentPath = window.location.pathname;
-        if (currentPath === '/auth') {
-          console.log('Iniciando redirecionamento para role:', profileWithCompany.role);
-          setTimeout(() => {
-            redirectBasedOnRole(profileWithCompany.role);
-          }, 100);
-        }
       } else {
         console.log('Nenhum perfil encontrado, criando perfil padrão...');
         
@@ -130,36 +130,34 @@ export const useAuth = () => {
           role: isAdmin ? 'admin' : 'garcon',
           name: isAdmin ? 'Administrador' : 'Garçom',
           email: userEmail,
-          company_id: 'default-company-id'
+          company_id: 'default-company-id',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         } as Profile;
         
         setProfile(defaultProfile);
         
-        const currentPath = window.location.pathname;
-        if (currentPath === '/auth') {
-          console.log('Redirecionando para role:', defaultProfile.role);
-          setTimeout(() => {
-            redirectBasedOnRole(defaultProfile.role);
-          }, 100);
+        // Tentar inserir o perfil no banco de dados
+        try {
+          await supabase
+            .from('profiles')
+            .insert([defaultProfile]);
+          console.log('Perfil inserido no banco de dados com sucesso');
+        } catch (insertError) {
+          console.log('Erro ao inserir perfil no banco, mas continuando com perfil em memória:', insertError);
         }
+      }
+
+      // Redirecionar se estamos na página de auth
+      const currentPath = window.location.pathname;
+      if (currentPath === '/auth') {
+        console.log('Redirecionamento necessário para role:', profile?.role || (isAdmin ? 'admin' : 'garcon'));
+        setTimeout(() => {
+          redirectBasedOnRole(profile?.role || (isAdmin ? 'admin' : 'garcon'));
+        }, 100);
       }
     } catch (error) {
       console.error('Erro crítico ao carregar perfil:', error);
-      
-      // Em caso de erro crítico, criar um perfil básico
-      const { data: userData } = await supabase.auth.getUser();
-      const userEmail = userData.user?.email || '';
-      const isAdmin = userEmail.includes('admin') || userEmail.includes('rodrigo') || userEmail === 'rodrigo_nunes.182@hotmail.com';
-      
-      const defaultProfile = { 
-        id: userId, 
-        role: isAdmin ? 'admin' : 'garcon',
-        name: isAdmin ? 'Administrador' : 'Garçom',
-        email: userEmail,
-        company_id: 'default-company-id'
-      } as Profile;
-      
-      setProfile(defaultProfile);
     } finally {
       setLoading(false);
     }

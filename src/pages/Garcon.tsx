@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -173,8 +172,10 @@ const Garcon = () => {
       try {
         console.log('Adding new table with number:', newTableNumber);
         
+        const tableNumber = parseInt(newTableNumber.replace(/\D/g, '')) || tables.length + 1;
+        
         await createTable.mutateAsync({
-          number: parseInt(newTableNumber.replace(/\D/g, '')) || tables.length + 1,
+          number: tableNumber,
           capacity: 4,
         });
 

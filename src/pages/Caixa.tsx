@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useDatabase } from '@/hooks/useDatabase';
 import { Order } from '@/types/database';
 import { toast } from '@/hooks/use-toast';
+import QRCode from '@/components/QRCode';
 
 const Caixa = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -59,6 +59,20 @@ const Caixa = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const generatePixCode = (amount: number) => {
+    // Chave PIX do restaurante (você pode configurar isso)
+    const pixKey = "restaurante@email.com"; // ou CPF/CNPJ/telefone
+    const merchantName = "Restaurante";
+    const merchantCity = "SAO PAULO";
+    const txId = selectedOrder?.id.slice(-10) || "1234567890";
+    
+    // Formato simplificado do PIX (EMV QR Code)
+    // Na prática, você pode usar uma biblioteca específica para PIX ou integrar com um provedor
+    const pixString = `PIX|${pixKey}|${amount.toFixed(2)}|${merchantName}|${merchantCity}|${txId}`;
+    
+    return pixString;
   };
 
   const getPaymentMethodLabel = (method: string) => {
@@ -313,6 +327,28 @@ const Caixa = () => {
                     </div>
                   </RadioGroup>
                 </div>
+
+                {/* QR Code PIX */}
+                {paymentMethod === 'pix' && (
+                  <div className="space-y-4">
+                    <div className="text-center">
+                      <h3 className="font-medium text-gray-900 mb-2">QR Code PIX</h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Escaneie o código abaixo para pagar
+                      </p>
+                    </div>
+                    <QRCode 
+                      value={generatePixCode(selectedOrder.total_amount)} 
+                      size={200}
+                      className="bg-white p-4 rounded-lg border"
+                    />
+                    <div className="text-center">
+                      <p className="text-xs text-gray-500">
+                        Valor: R$ {selectedOrder.total_amount.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex gap-3 pt-4">
                   <Button 

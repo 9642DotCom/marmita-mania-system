@@ -14,6 +14,7 @@ export const useAuth = () => {
   useEffect(() => {
     // Verificar usuário atual
     supabase.auth.getUser().then(({ data: { user } }) => {
+      console.log('Usuário atual detectado:', user?.id);
       setUser(user);
       if (user) {
         loadProfile(user.id);
@@ -25,7 +26,7 @@ export const useAuth = () => {
     // Escutar mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.id);
+        console.log('Auth state changed:', event, session?.user?.id, 'Current path:', window.location.pathname);
         setUser(session?.user ?? null);
         if (session?.user) {
           loadProfile(session.user.id);
@@ -55,11 +56,16 @@ export const useAuth = () => {
         console.log('Perfil carregado:', data);
         setProfile(data as Profile);
         
-        // Redirecionar baseado no role do usuário apenas se estiver na página de auth
-        if (data && window.location.pathname === '/auth') {
+        // Verificar se estamos na página de auth e redirecionar
+        const currentPath = window.location.pathname;
+        console.log('Caminho atual:', currentPath);
+        
+        if (data && currentPath === '/auth') {
+          console.log('Iniciando redirecionamento para role:', data.role);
+          // Usar um timeout maior para garantir que o estado seja atualizado
           setTimeout(() => {
             redirectBasedOnRole(data.role);
-          }, 100);
+          }, 500);
         }
       }
     } catch (error) {
@@ -71,25 +77,31 @@ export const useAuth = () => {
   };
 
   const redirectBasedOnRole = (role: string) => {
-    console.log('Redirecionando usuário com role:', role, 'da página:', window.location.pathname);
+    console.log('Executando redirecionamento para role:', role, 'da página:', window.location.pathname);
     
     switch (role) {
       case 'admin':
+        console.log('Redirecionando para /admin');
         navigate('/admin');
         break;
       case 'entregador':
+        console.log('Redirecionando para /entregador');
         navigate('/entregador');
         break;
       case 'caixa':
+        console.log('Redirecionando para /caixa');
         navigate('/caixa');
         break;
       case 'cozinha':
+        console.log('Redirecionando para /cozinha');
         navigate('/cozinha');
         break;
       case 'garcon':
+        console.log('Redirecionando para /garcon');
         navigate('/garcon');
         break;
       default:
+        console.log('Redirecionando para /');
         navigate('/');
         break;
     }

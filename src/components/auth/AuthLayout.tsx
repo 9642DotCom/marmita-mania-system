@@ -17,6 +17,7 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
   useEffect(() => {
     // Verificar usuário atual
     supabase.auth.getUser().then(({ data: { user } }) => {
+      console.log('AuthLayout - Usuário atual:', user?.id);
       setUser(user);
       setLoading(false);
     });
@@ -24,6 +25,7 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
     // Escutar mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('AuthLayout - Auth state changed:', event, session?.user?.id);
         setUser(session?.user ?? null);
         setLoading(false);
       }
@@ -53,6 +55,7 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
     return <RestaurantAuth />;
   }
 
+  // Se está logado, mostrar o conteúdo
   return <>{children}</>;
 };
 

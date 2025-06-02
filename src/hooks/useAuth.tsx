@@ -69,62 +69,79 @@ export const useAuth = () => {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Erro ao carregar perfil:', error);
+        
         // Se há erro de recursão ou não encontrou perfil, criar um perfil padrão admin
-        console.log('Criando perfil admin padrão...');
-        setProfile({ 
+        console.log('Criando perfil admin padrão devido ao erro...');
+        const defaultProfile = { 
           id: userId, 
           role: 'admin',
           name: 'Admin',
           email: '',
           company_id: null
-        } as Profile);
+        } as Profile;
         
-        // Verificar se estamos na página de auth e redirecionar
+        setProfile(defaultProfile);
+        
+        // Só redirecionar se estamos na página de auth
         const currentPath = window.location.pathname;
         console.log('Caminho atual após erro:', currentPath);
         
         if (currentPath === '/auth') {
           console.log('Redirecionando admin para /admin após erro de perfil');
           setTimeout(() => {
-            navigate('/admin');
-          }, 500);
+            navigate('/admin', { replace: true });
+          }, 100);
         }
-      } else {
-        console.log('Perfil carregado:', data);
+      } else if (data) {
+        console.log('Perfil carregado com sucesso:', data);
         setProfile(data as Profile);
         
-        // Verificar se estamos na página de auth e redirecionar
+        // Só redirecionar se estamos na página de auth
         const currentPath = window.location.pathname;
         console.log('Caminho atual:', currentPath);
         
-        if (data && currentPath === '/auth') {
+        if (currentPath === '/auth') {
           console.log('Iniciando redirecionamento para role:', data.role);
           setTimeout(() => {
             redirectBasedOnRole(data.role);
-          }, 500);
+          }, 100);
+        }
+      } else {
+        console.log('Nenhum perfil encontrado, criando perfil admin padrão...');
+        const defaultProfile = { 
+          id: userId, 
+          role: 'admin',
+          name: 'Admin',
+          email: '',
+          company_id: null
+        } as Profile;
+        
+        setProfile(defaultProfile);
+        
+        const currentPath = window.location.pathname;
+        if (currentPath === '/auth') {
+          console.log('Redirecionando para admin (sem perfil encontrado)');
+          setTimeout(() => {
+            navigate('/admin', { replace: true });
+          }, 100);
         }
       }
     } catch (error) {
       console.error('Erro crítico ao carregar perfil:', error);
-      // Em caso de erro crítico, assumir admin e redirecionar
-      setProfile({ 
+      // Em caso de erro crítico, assumir admin sem redirecionar automaticamente
+      const defaultProfile = { 
         id: userId, 
         role: 'admin',
         name: 'Admin',
         email: '',
         company_id: null
-      } as Profile);
+      } as Profile;
       
-      if (window.location.pathname === '/auth') {
-        console.log('Redirecionando para admin após erro crítico');
-        setTimeout(() => {
-          navigate('/admin');
-        }, 500);
-      }
+      setProfile(defaultProfile);
     } finally {
       setLoading(false);
     }
@@ -136,27 +153,27 @@ export const useAuth = () => {
     switch (role) {
       case 'admin':
         console.log('Redirecionando para /admin');
-        navigate('/admin');
+        navigate('/admin', { replace: true });
         break;
       case 'entregador':
         console.log('Redirecionando para /entregador');
-        navigate('/entregador');
+        navigate('/entregador', { replace: true });
         break;
       case 'caixa':
         console.log('Redirecionando para /caixa');
-        navigate('/caixa');
+        navigate('/caixa', { replace: true });
         break;
       case 'cozinha':
         console.log('Redirecionando para /cozinha');
-        navigate('/cozinha');
+        navigate('/cozinha', { replace: true });
         break;
       case 'garcon':
         console.log('Redirecionando para /garcon');
-        navigate('/garcon');
+        navigate('/garcon', { replace: true });
         break;
       default:
         console.log('Redirecionando para /');
-        navigate('/');
+        navigate('/', { replace: true });
         break;
     }
   };

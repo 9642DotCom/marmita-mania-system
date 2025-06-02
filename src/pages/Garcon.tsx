@@ -6,10 +6,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Users, Clock, Plus, Utensils } from 'lucide-react';
+import { Users, Clock, Plus, Utensils, Trash2 } from 'lucide-react';
+
+interface Table {
+  id: number;
+  number: string;
+  customers: number;
+  status: 'livre' | 'ocupada' | 'aguardando';
+  order: string;
+  total: number;
+  startTime: string;
+}
 
 const Garcon = () => {
-  const [tables, setTables] = useState([
+  const [tables, setTables] = useState<Table[]>([
     {
       id: 1,
       number: 'Mesa 01',
@@ -47,12 +57,41 @@ const Garcon = () => {
   });
 
   const [showOrderForm, setShowOrderForm] = useState(false);
+  const [showAddTableForm, setShowAddTableForm] = useState(false);
+  const [newTableNumber, setNewTableNumber] = useState('');
 
   const handleNewOrder = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Novo pedido:', newOrder);
     setNewOrder({ table: '', customers: '', items: '', notes: '' });
     setShowOrderForm(false);
+  };
+
+  const handleAddTable = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newTableNumber.trim()) {
+      const newTable: Table = {
+        id: Math.max(...tables.map(t => t.id)) + 1,
+        number: newTableNumber,
+        customers: 0,
+        status: 'livre',
+        order: '',
+        total: 0,
+        startTime: ''
+      };
+      setTables([...tables, newTable]);
+      setNewTableNumber('');
+      setShowAddTableForm(false);
+    }
+  };
+
+  const handleRemoveTable = (tableId: number) => {
+    const table = tables.find(t => t.id === tableId);
+    if (table?.status === 'livre') {
+      setTables(tables.filter(t => t.id !== tableId));
+    } else {
+      alert('Não é possível remover mesa ocupada ou com pedido pendente');
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -92,14 +131,14 @@ const Garcon = () => {
           <p className="text-gray-600">Gerencie mesas e atendimento</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
                 <Utensils className="h-8 w-8 text-blue-600" />
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Mesas Ocupadas</p>
-                  <p className="text-2xl font-bold text-gray-900">{occupiedTables}/3</p>
+                  <p className="text-2xl font-bold text-gray-900">{occupiedTables}/{tables.length}</p>
                 </div>
               </div>
             </CardContent>
@@ -142,6 +181,21 @@ const Garcon = () => {
               </div>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-center">
+                <Button 
+                  onClick={() => setShowAddTableForm(true)}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar Mesa
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Card className="mb-6">
@@ -149,12 +203,24 @@ const Garcon = () => {
             <CardTitle>Status das Mesas</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {tables.map((table) => (
-                <div key={table.id} className={`border-2 rounded-lg p-4 ${getStatusColor(table.status)}`}>
+                <div key={table.id} className={`border-2 rounded-lg p-4 relative ${getStatusColor(table.status)}`}>
                   <div className="flex justify-between items-start mb-3">
                     <h3 className="font-semibold text-lg">{table.number}</h3>
-                    {getStatusBadge(table.status)}
+                    <div className="flex gap-2">
+                      {getStatusBadge(table.status)}
+                      {table.status === 'livre' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveTable(table.id)}
+                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   
                   {table.status !== 'livre' && (
@@ -192,6 +258,7 @@ const Garcon = () => {
           </CardContent>
         </Card>
 
+        {/* Modal para novo pedido */}
         {showOrderForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <Card className="w-full max-w-md">
@@ -251,6 +318,48 @@ const Garcon = () => {
                       type="button" 
                       variant="outline" 
                       onClick={() => setShowOrderForm(false)} 
+                      className="flex-1"
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Modal para adicionar mesa */}
+        {showAddTableForm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-sm">
+              <CardHeader>
+                <CardTitle>Adicionar Nova Mesa</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleAddTable} className="space-y-4">
+                  <div>
+                    <Label htmlFor="tableNumber">Número da Mesa</Label>
+                    <Input
+                      id="tableNumber"
+                      value={newTableNumber}
+                      onChange={(e) => setNewTableNumber(e.target.value)}
+                      placeholder="Ex: Mesa 04"
+                      required
+                    />
+                  </div>
+
+                  <div className="flex gap-2 pt-4">
+                    <Button type="submit" className="flex-1">
+                      Adicionar
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => {
+                        setShowAddTableForm(false);
+                        setNewTableNumber('');
+                      }} 
                       className="flex-1"
                     >
                       Cancelar

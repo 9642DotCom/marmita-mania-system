@@ -1,8 +1,9 @@
 
-import { ShoppingCart, Utensils, LogOut } from 'lucide-react';
+import { ShoppingCart, Utensils, LogOut, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
   cartItemCount: number;
@@ -14,6 +15,15 @@ interface HeaderProps {
 
 const Header = ({ cartItemCount, onCartClick, restaurantName, restaurantSlogan, logoUrl }: HeaderProps) => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleAuthAction = () => {
+    if (user) {
+      signOut();
+    } else {
+      navigate('/auth');
+    }
+  };
 
   return (
     <header className="bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg sticky top-0 z-50">
@@ -53,17 +63,24 @@ const Header = ({ cartItemCount, onCartClick, restaurantName, restaurantSlogan, 
               )}
             </Button>
             
-            {user && (
-              <Button
-                onClick={signOut}
-                variant="secondary"
-                size="lg"
-                className="bg-white/10 hover:bg-white/20 text-white border-white/20"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sair
-              </Button>
-            )}
+            <Button
+              onClick={handleAuthAction}
+              variant="secondary"
+              size="lg"
+              className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+            >
+              {user ? (
+                <>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sair
+                </>
+              ) : (
+                <>
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Entrar
+                </>
+              )}
+            </Button>
           </div>
         </div>
       </div>

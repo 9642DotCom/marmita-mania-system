@@ -125,44 +125,67 @@ const Garcon = () => {
       return;
     }
 
+    if (!profile?.company_id) {
+      toast({
+        title: "Erro",
+        description: "Erro de autenticação. Tente fazer login novamente.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
-      console.log('Starting order creation process...');
-      console.log('Profile:', profile);
-      console.log('Order data:', newOrder);
-      console.log('Order items:', orderItems);
+      console.log('🍽️ Enviando pedido para a cozinha...');
+      console.log('👤 Garçom:', profile.name);
+      console.log('🏢 Empresa:', profile.company_id);
+      console.log('📋 Dados do pedido:', newOrder);
+      console.log('🛒 Itens:', orderItems);
 
       // Criar pedido
       const orderData = {
         table_id: newOrder.tableId,
-        customer_name: newOrder.customer_name,
-        customer_phone: newOrder.customer_phone,
+        customer_name: newOrder.customer_name || 'Cliente não informado',
+        customer_phone: newOrder.customer_phone || '',
         total_amount: calculateOrderTotal(),
-        notes: newOrder.notes,
+        notes: newOrder.notes || '',
         status: 'pendente' as const,
       };
 
-      console.log('Creating order with data:', orderData);
+      console.log('📝 Criando pedido com dados:', orderData);
       const order = await createOrder.mutateAsync(orderData);
-      console.log('Order created successfully:', order);
+      console.log('✅ Pedido criado com sucesso:', order);
 
       // Criar itens do pedido
+      console.log('📦 Adicionando itens ao pedido...');
       await createOrderItems.mutateAsync({
         orderId: order.id,
         items: orderItems.map(item => ({
           product_id: item.product_id,
           quantity: item.quantity,
           unit_price: item.unit_price,
-          notes: item.notes,
+          notes: item.notes || '',
         }))
+      });
+
+      console.log('🎉 Pedido enviado para a cozinha com sucesso!');
+
+      toast({
+        title: "Pedido enviado! 🍽️",
+        description: `Pedido #${order.id.slice(0, 8)} foi enviado para a cozinha. Total: R$ ${calculateOrderTotal().toFixed(2)}`,
       });
 
       // Limpar formulário
       setNewOrder({ tableId: '', customers: '', notes: '', customer_name: '', customer_phone: '' });
       setOrderItems([]);
       setShowOrderForm(false);
+
     } catch (error: any) {
-      console.error('Error in handleNewOrder:', error);
-      // Error is already handled by the mutation
+      console.error('❌ Erro ao enviar pedido:', error);
+      toast({
+        title: "Erro ao enviar pedido",
+        description: error.message || "Ocorreu um erro inesperado. Tente novamente.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -351,12 +374,12 @@ const Garcon = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <Card className="w-full max-w-2xl max-h-[80vh] overflow-y-auto">
               <CardHeader>
-                <CardTitle>Novo Pedido</CardTitle>
+                <CardTitle>Novo Pedido 🍽️</CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleNewOrder} className="space-y-4">
                   <div>
-                    <Label htmlFor="table">Mesa</Label>
+                    <Label htmlFor="table">Mesa *</Label>
                     <Select value={newOrder.tableId} onValueChange={(value) => setNewOrder(prev => ({ ...prev, tableId: value }))}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione uma mesa" />
@@ -364,7 +387,7 @@ const Garcon = () => {
                       <SelectContent>
                         {availableTables.map((table) => (
                           <SelectItem key={table.id} value={table.id}>
-                            Mesa {table.number}
+                            Mesa {table.number} (até {table.capacity} pessoas)
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -377,7 +400,7 @@ const Garcon = () => {
                       id="customerName"
                       value={newOrder.customer_name}
                       onChange={(e) => setNewOrder(prev => ({ ...prev, customer_name: e.target.value }))}
-                      placeholder="Nome do cliente"
+                      placeholder="Nome do cliente (opcional)"
                     />
                   </div>
 
@@ -387,19 +410,19 @@ const Garcon = () => {
                       id="customerPhone"
                       value={newOrder.customer_phone}
                       onChange={(e) => setNewOrder(prev => ({ ...prev, customer_phone: e.target.value }))}
-                      placeholder="(11) 99999-9999"
+                      placeholder="(11) 99999-9999 (opcional)"
                     />
                   </div>
 
                   <div>
-                    <Label>Adicionar Item</Label>
+                    <Label>Adicionar Item *</Label>
                     <div className="flex gap-2">
                       <Select value={selectedProductId} onValueChange={setSelectedProductId}>
                         <SelectTrigger className="flex-1">
                           <SelectValue placeholder="Selecione um produto" />
                         </SelectTrigger>
                         <SelectContent>
-                          {products.map((product) => (
+                          {products.filter(p => p.available).map((product) => (
                             <SelectItem key={product.id} value={product.id}>
                               {product.name} - R$ {Number(product.price).toFixed(2)}
                             </SelectItem>
@@ -414,13 +437,16 @@ const Garcon = () => {
 
                   {orderItems.length > 0 && (
                     <div>
-                      <Label>Itens do Pedido</Label>
-                      <div className="border rounded-lg p-3 space-y-2 max-h-40 overflow-y-auto">
+                      <Label>Itens do Pedido ({orderItems.length})</Label>
+                      <div className="border rounded-lg p-3 space-y-2 max-h-40 overflow-y-auto bg-gray-50">
                         {orderItems.map((orderItem) => (
-                          <div key={orderItem.product_id} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                          <div key={orderItem.product_id} className="flex items-center justify-between bg-white p-3 rounded shadow-sm">
                             <div className="flex-1">
-                              <p className="font-medium">{orderItem.product_name}</p>
+                              <p className="font-medium text-sm">{orderItem.product_name}</p>
                               <p className="text-sm text-gray-600">R$ {orderItem.unit_price.toFixed(2)} cada</p>
+                              <p className="text-sm font-semibold text-green-600">
+                                Subtotal: R$ {(orderItem.unit_price * orderItem.quantity).toFixed(2)}
+                              </p>
                             </div>
                             <div className="flex items-center gap-2">
                               <Button
@@ -431,7 +457,7 @@ const Garcon = () => {
                               >
                                 <Minus className="h-3 w-3" />
                               </Button>
-                              <span className="w-8 text-center">{orderItem.quantity}</span>
+                              <span className="w-8 text-center font-semibold">{orderItem.quantity}</span>
                               <Button
                                 type="button"
                                 variant="outline"
@@ -451,9 +477,9 @@ const Garcon = () => {
                             </div>
                           </div>
                         ))}
-                        <div className="flex justify-between items-center pt-2 border-t">
-                          <span className="font-semibold">Total:</span>
-                          <span className="font-bold text-lg">R$ {calculateOrderTotal().toFixed(2)}</span>
+                        <div className="flex justify-between items-center pt-3 border-t bg-green-50 p-3 rounded">
+                          <span className="font-bold text-lg">Total do Pedido:</span>
+                          <span className="font-bold text-xl text-green-600">R$ {calculateOrderTotal().toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
@@ -465,13 +491,18 @@ const Garcon = () => {
                       id="notes"
                       value={newOrder.notes}
                       onChange={(e) => setNewOrder(prev => ({ ...prev, notes: e.target.value }))}
-                      placeholder="Observações especiais..."
+                      placeholder="Observações especiais para a cozinha..."
+                      rows={3}
                     />
                   </div>
 
-                  <div className="flex gap-2 pt-4">
-                    <Button type="submit" className="flex-1" disabled={orderItems.length === 0}>
-                      Enviar para Cozinha
+                  <div className="flex gap-3 pt-4">
+                    <Button 
+                      type="submit" 
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3" 
+                      disabled={orderItems.length === 0 || !newOrder.tableId}
+                    >
+                      🍽️ Enviar para Cozinha
                     </Button>
                     <Button 
                       type="button" 
@@ -481,7 +512,7 @@ const Garcon = () => {
                         setNewOrder({ tableId: '', customers: '', notes: '', customer_name: '', customer_phone: '' });
                         setOrderItems([]);
                       }} 
-                      className="flex-1"
+                      className="flex-1 py-3"
                     >
                       Cancelar
                     </Button>

@@ -377,30 +377,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      can_view_company_profiles: {
-        Args: { target_company_id: string }
-        Returns: boolean
-      }
-      get_current_user_company_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      is_admin: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      is_company_admin: {
-        Args: { company_uuid: string }
-        Returns: boolean
-      }
-      is_own_profile: {
-        Args: { profile_user_id: string }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
       order_status:

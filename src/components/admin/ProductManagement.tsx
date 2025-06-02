@@ -4,10 +4,12 @@ import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { marmitas } from '@/data/marmitas';
+import { useDatabase } from '@/hooks/useDatabase';
 import ProductForm from './ProductForm';
 
 const ProductManagement = () => {
+  const { useProducts } = useDatabase();
+  const { data: products = [], isLoading } = useProducts();
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
 
@@ -16,15 +18,23 @@ const ProductManagement = () => {
     setShowForm(true);
   };
 
-  const handleDelete = (productId: number) => {
+  const handleDelete = (productId: string) => {
     console.log('Deletar produto:', productId);
-    // Aqui você implementaria a lógica de deletar
+    // Implementar lógica de deletar
   };
 
   const handleCloseForm = () => {
     setShowForm(false);
     setEditingProduct(null);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -48,22 +58,38 @@ const ProductManagement = () => {
                 <TableHead>Nome</TableHead>
                 <TableHead>Categoria</TableHead>
                 <TableHead>Preço</TableHead>
+                <TableHead>Disponível</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {marmitas.map((product) => (
+              {products.map((product) => (
                 <TableRow key={product.id}>
                   <TableCell>
-                    <img
-                      src={`https://images.unsplash.com/${product.image}?auto=format&fit=crop&w=60&q=80`}
-                      alt={product.name}
-                      className="w-12 h-12 object-cover rounded-lg"
-                    />
+                    {product.image_url ? (
+                      <img
+                        src={product.image_url}
+                        alt={product.name}
+                        className="w-12 h-12 object-cover rounded-lg"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
+                        <span className="text-gray-400 text-xs">Sem imagem</span>
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="font-medium">{product.name}</TableCell>
-                  <TableCell>{product.category}</TableCell>
-                  <TableCell>R$ {product.price.toFixed(2)}</TableCell>
+                  <TableCell>{product.categories?.name || 'Sem categoria'}</TableCell>
+                  <TableCell>R$ {Number(product.price).toFixed(2)}</TableCell>
+                  <TableCell>
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      product.available 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {product.available ? 'Disponível' : 'Indisponível'}
+                    </span>
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Button

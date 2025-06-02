@@ -6,235 +6,207 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Clock, Plus, Utensils, Trash2, Minus } from 'lucide-react';
-import { marmitas } from '@/data/marmitas';
-import { MarmitaItem } from '@/hooks/useCart';
-
-interface Table {
-  id: number;
-  number: string;
-  customers: number;
-  status: 'livre' | 'ocupada' | 'aguardando';
-  order: string;
-  total: number;
-  startTime: string;
-}
+import { Users, Clock, Plus, Utensils, Trash2, Minus, LogOut } from 'lucide-react';
+import { useDatabase } from '@/hooks/useDatabase';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from '@/hooks/use-toast';
 
 interface OrderItem {
-  item: MarmitaItem;
+  product_id: string;
+  product_name: string;
   quantity: number;
-}
-
-interface Order {
-  id: string;
-  tableNumber: string;
-  items: OrderItem[];
-  total: number;
-  status: 'preparando' | 'pronto' | 'entregue';
-  createdAt: string;
+  unit_price: number;
   notes?: string;
 }
 
 const Garcon = () => {
-  const [tables, setTables] = useState<Table[]>([
-    {
-      id: 1,
-      number: 'Mesa 01',
-      customers: 2,
-      status: 'ocupada',
-      order: '#001',
-      total: 45.80,
-      startTime: '14:30'
-    },
-    {
-      id: 2,
-      number: 'Mesa 02',
-      customers: 4,
-      status: 'livre',
-      order: '',
-      total: 0,
-      startTime: ''
-    },
-    {
-      id: 3,
-      number: 'Mesa 03',
-      customers: 3,
-      status: 'aguardando',
-      order: '#002',
-      total: 32.50,
-      startTime: '14:45'
-    }
-  ]);
-
-  const [orders, setOrders] = useState<Order[]>([]);
+  const { useProducts, useTables, createOrder, createOrderItems, createTable } = useDatabase();
+  const { profile, signOut } = useAuth();
+  const { data: products = [] } = useProducts();
+  const { data: tables = [] } = useTables();
 
   const [newOrder, setNewOrder] = useState({
     tableId: '',
     customers: '',
-    notes: ''
+    notes: '',
+    customer_name: '',
+    customer_phone: '',
   });
 
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
-  const [selectedItemId, setSelectedItemId] = useState<string>('');
-
+  const [selectedProductId, setSelectedProductId] = useState<string>('');
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [showAddTableForm, setShowAddTableForm] = useState(false);
   const [newTableNumber, setNewTableNumber] = useState('');
 
   const addItemToOrder = () => {
-    if (!selectedItemId) return;
+    if (!selectedProductId) return;
     
-    const item = marmitas.find(m => m.id.toString() === selectedItemId);
-    if (!item) return;
+    const product = products.find(p => p.id === selectedProductId);
+    if (!product) return;
 
-    const existingItem = orderItems.find(oi => oi.item.id === item.id);
+    const existingItem = orderItems.find(oi => oi.product_id === product.id);
     if (existingItem) {
       setOrderItems(orderItems.map(oi => 
-        oi.item.id === item.id 
+        oi.product_id === product.id 
           ? { ...oi, quantity: oi.quantity + 1 }
           : oi
       ));
     } else {
-      setOrderItems([...orderItems, { item, quantity: 1 }]);
+      setOrderItems([...orderItems, { 
+        product_id: product.id,
+        product_name: product.name,
+        quantity: 1,
+        unit_price: Number(product.price)
+      }]);
     }
-    setSelectedItemId('');
+    setSelectedProductId('');
   };
 
-  const removeItemFromOrder = (itemId: number) => {
-    setOrderItems(orderItems.filter(oi => oi.item.id !== itemId));
+  const removeItemFromOrder = (productId: string) => {
+    setOrderItems(orderItems.filter(oi => oi.product_id !== productId));
   };
 
-  const updateItemQuantity = (itemId: number, quantity: number) => {
+  const updateItemQuantity = (productId: string, quantity: number) => {
     if (quantity <= 0) {
-      removeItemFromOrder(itemId);
+      removeItemFromOrder(productId);
       return;
     }
     setOrderItems(orderItems.map(oi => 
-      oi.item.id === itemId 
+      oi.product_id === productId 
         ? { ...oi, quantity }
         : oi
     ));
   };
 
   const calculateOrderTotal = () => {
-    return orderItems.reduce((total, oi) => total + (oi.item.price * oi.quantity), 0);
+    return orderItems.reduce((total, oi) => total + (oi.unit_price * oi.quantity), 0);
   };
 
-  const handleNewOrder = (e: React.FormEvent) => {
+  const handleNewOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!newOrder.tableId || orderItems.length === 0) {
-      alert('Selecione uma mesa e adicione pelo menos um item');
+      toast({
+        title: "Erro",
+        description: "Selecione uma mesa e adicione pelo menos um item",
+        variant: "destructive"
+      });
       return;
     }
 
-    const selectedTable = tables.find(t => t.id.toString() === newOrder.tableId);
-    if (!selectedTable) return;
-
-    // Gerar ID do pedido
-    const orderId = `#${String(orders.length + 1).padStart(3, '0')}`;
-    const now = new Date();
-    const orderTotal = calculateOrderTotal();
-
-    // Criar novo pedido
-    const order: Order = {
-      id: orderId,
-      tableNumber: selectedTable.number,
-      items: orderItems,
-      total: orderTotal,
-      status: 'preparando',
-      createdAt: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-      notes: newOrder.notes
-    };
-
-    // Adicionar à lista de pedidos (enviando para cozinha)
-    setOrders([...orders, order]);
-
-    // Atualizar status da mesa
-    setTables(tables.map(table =>
-      table.id.toString() === newOrder.tableId
-        ? {
-            ...table,
-            status: 'ocupada' as const,
-            customers: parseInt(newOrder.customers),
-            order: orderId,
-            total: orderTotal,
-            startTime: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-          }
-        : table
-    ));
-
-    console.log('Pedido enviado para a cozinha:', order);
-
-    // Limpar formulário
-    setNewOrder({ tableId: '', customers: '', notes: '' });
-    setOrderItems([]);
-    setShowOrderForm(false);
-  };
-
-  const handleAddTable = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newTableNumber.trim()) {
-      const newTable: Table = {
-        id: Math.max(...tables.map(t => t.id)) + 1,
-        number: newTableNumber,
-        customers: 0,
-        status: 'livre',
-        order: '',
-        total: 0,
-        startTime: ''
+    try {
+      // Criar pedido
+      const orderData = {
+        table_id: newOrder.tableId,
+        customer_name: newOrder.customer_name,
+        customer_phone: newOrder.customer_phone,
+        total_amount: calculateOrderTotal(),
+        notes: newOrder.notes,
+        status: 'pendente' as const,
       };
-      setTables([...tables, newTable]);
-      setNewTableNumber('');
-      setShowAddTableForm(false);
+
+      const order = await createOrder.mutateAsync(orderData);
+
+      // Criar itens do pedido
+      await createOrderItems.mutateAsync({
+        orderId: order.id,
+        items: orderItems.map(item => ({
+          product_id: item.product_id,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          notes: item.notes,
+        }))
+      });
+
+      toast({
+        title: "Pedido criado!",
+        description: "Pedido enviado para a cozinha com sucesso.",
+      });
+
+      // Limpar formulário
+      setNewOrder({ tableId: '', customers: '', notes: '', customer_name: '', customer_phone: '' });
+      setOrderItems([]);
+      setShowOrderForm(false);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao criar pedido",
+        description: error.message,
+        variant: "destructive"
+      });
     }
   };
 
-  const handleRemoveTable = (tableId: number) => {
-    const table = tables.find(t => t.id === tableId);
-    if (table?.status === 'livre') {
-      setTables(tables.filter(t => t.id !== tableId));
-    } else {
-      alert('Não é possível remover mesa ocupada ou com pedido pendente');
+  const handleAddTable = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newTableNumber.trim()) {
+      try {
+        await createTable.mutateAsync({
+          number: parseInt(newTableNumber.replace(/\D/g, '')) || tables.length + 1,
+          capacity: 4,
+        });
+
+        toast({
+          title: "Mesa adicionada!",
+          description: `${newTableNumber} foi criada com sucesso.`,
+        });
+
+        setNewTableNumber('');
+        setShowAddTableForm(false);
+      } catch (error: any) {
+        toast({
+          title: "Erro ao criar mesa",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
     }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'livre':
+      case 'available':
         return <Badge variant="default">Livre</Badge>;
-      case 'ocupada':
+      case 'occupied':
         return <Badge variant="secondary">Ocupada</Badge>;
-      case 'aguardando':
+      case 'waiting':
         return <Badge variant="destructive">Aguardando</Badge>;
       default:
-        return <Badge variant="secondary">{status}</Badge>;
+        return <Badge variant="secondary">Livre</Badge>;
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'livre':
+      case 'available':
         return 'border-green-300 bg-green-50';
-      case 'ocupada':
+      case 'occupied':
         return 'border-blue-300 bg-blue-50';
-      case 'aguardando':
+      case 'waiting':
         return 'border-red-300 bg-red-50';
       default:
         return 'border-gray-300 bg-gray-50';
     }
   };
 
-  const occupiedTables = tables.filter(t => t.status !== 'livre').length;
-  const totalCustomers = tables.reduce((sum, table) => sum + (table.status !== 'livre' ? table.customers : 0), 0);
-  const availableTables = tables.filter(t => t.status === 'livre');
+  const availableTables = tables.filter(t => t.available);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Sistema do Garçom</h1>
-          <p className="text-gray-600">Gerencie mesas e atendimento</p>
+        <div className="mb-6 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Sistema do Garçom</h1>
+            <p className="text-gray-600">Olá, {profile?.name}! Gerencie mesas e atendimento</p>
+          </div>
+          <Button 
+            onClick={signOut}
+            variant="outline"
+            className="text-red-600 hover:text-red-700"
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Sair
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
@@ -243,8 +215,8 @@ const Garcon = () => {
               <div className="flex items-center">
                 <Utensils className="h-8 w-8 text-blue-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Mesas Ocupadas</p>
-                  <p className="text-2xl font-bold text-gray-900">{occupiedTables}/{tables.length}</p>
+                  <p className="text-sm font-medium text-gray-600">Total de Mesas</p>
+                  <p className="text-2xl font-bold text-gray-900">{tables.length}</p>
                 </div>
               </div>
             </CardContent>
@@ -255,8 +227,8 @@ const Garcon = () => {
               <div className="flex items-center">
                 <Users className="h-8 w-8 text-green-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Clientes Ativos</p>
-                  <p className="text-2xl font-bold text-gray-900">{totalCustomers}</p>
+                  <p className="text-sm font-medium text-gray-600">Mesas Disponíveis</p>
+                  <p className="text-2xl font-bold text-gray-900">{availableTables.length}</p>
                 </div>
               </div>
             </CardContent>
@@ -267,8 +239,8 @@ const Garcon = () => {
               <div className="flex items-center">
                 <Clock className="h-8 w-8 text-orange-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Tempo Médio</p>
-                  <p className="text-2xl font-bold text-gray-900">35 min</p>
+                  <p className="text-sm font-medium text-gray-600">Produtos Disponíveis</p>
+                  <p className="text-2xl font-bold text-gray-900">{products.length}</p>
                 </div>
               </div>
             </CardContent>
@@ -307,58 +279,32 @@ const Garcon = () => {
 
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Status das Mesas</CardTitle>
+            <CardTitle>Mesas da Empresa</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {tables.map((table) => (
-                <div key={table.id} className={`border-2 rounded-lg p-4 relative ${getStatusColor(table.status)}`}>
+                <div key={table.id} className={`border-2 rounded-lg p-4 relative ${getStatusColor('available')}`}>
                   <div className="flex justify-between items-start mb-3">
-                    <h3 className="font-semibold text-lg">{table.number}</h3>
+                    <h3 className="font-semibold text-lg">Mesa {table.number}</h3>
                     <div className="flex gap-2">
-                      {getStatusBadge(table.status)}
-                      {table.status === 'livre' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveTable(table.id)}
-                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      )}
+                      {getStatusBadge('available')}
                     </div>
                   </div>
                   
-                  {table.status !== 'livre' && (
-                    <>
-                      <div className="mb-2">
-                        <p className="text-sm text-gray-600">Clientes: {table.customers}</p>
-                        <p className="text-sm text-gray-600">Pedido: {table.order}</p>
-                        <p className="text-sm text-gray-600">Início: {table.startTime}</p>
-                      </div>
-                      
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium text-green-600">R$ {table.total.toFixed(2)}</span>
-                        <Button variant="outline" size="sm">
-                          Ver Detalhes
-                        </Button>
-                      </div>
-                    </>
-                  )}
-                  
-                  {table.status === 'livre' && (
-                    <div className="text-center py-4">
-                      <p className="text-gray-500 mb-3">Mesa disponível</p>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => setShowOrderForm(true)}
-                      >
-                        Alocar Mesa
-                      </Button>
-                    </div>
-                  )}
+                  <div className="text-center py-4">
+                    <p className="text-gray-500 mb-3">Capacidade: {table.capacity} pessoas</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setNewOrder(prev => ({ ...prev, tableId: table.id }));
+                        setShowOrderForm(true);
+                      }}
+                    >
+                      Fazer Pedido
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -382,8 +328,8 @@ const Garcon = () => {
                       </SelectTrigger>
                       <SelectContent>
                         {availableTables.map((table) => (
-                          <SelectItem key={table.id} value={table.id.toString()}>
-                            {table.number}
+                          <SelectItem key={table.id} value={table.id}>
+                            Mesa {table.number}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -391,33 +337,41 @@ const Garcon = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="customers">Número de Clientes</Label>
+                    <Label htmlFor="customerName">Nome do Cliente</Label>
                     <Input
-                      id="customers"
-                      type="number"
-                      value={newOrder.customers}
-                      onChange={(e) => setNewOrder(prev => ({ ...prev, customers: e.target.value }))}
-                      placeholder="Ex: 4"
-                      required
+                      id="customerName"
+                      value={newOrder.customer_name}
+                      onChange={(e) => setNewOrder(prev => ({ ...prev, customer_name: e.target.value }))}
+                      placeholder="Nome do cliente"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="customerPhone">Telefone do Cliente</Label>
+                    <Input
+                      id="customerPhone"
+                      value={newOrder.customer_phone}
+                      onChange={(e) => setNewOrder(prev => ({ ...prev, customer_phone: e.target.value }))}
+                      placeholder="(11) 99999-9999"
                     />
                   </div>
 
                   <div>
                     <Label>Adicionar Item</Label>
                     <div className="flex gap-2">
-                      <Select value={selectedItemId} onValueChange={setSelectedItemId}>
+                      <Select value={selectedProductId} onValueChange={setSelectedProductId}>
                         <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Selecione um item do cardápio" />
+                          <SelectValue placeholder="Selecione um produto" />
                         </SelectTrigger>
                         <SelectContent>
-                          {marmitas.map((item) => (
-                            <SelectItem key={item.id} value={item.id.toString()}>
-                              {item.name} - R$ {item.price.toFixed(2)}
+                          {products.map((product) => (
+                            <SelectItem key={product.id} value={product.id}>
+                              {product.name} - R$ {Number(product.price).toFixed(2)}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
-                      <Button type="button" onClick={addItemToOrder} disabled={!selectedItemId}>
+                      <Button type="button" onClick={addItemToOrder} disabled={!selectedProductId}>
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
@@ -428,17 +382,17 @@ const Garcon = () => {
                       <Label>Itens do Pedido</Label>
                       <div className="border rounded-lg p-3 space-y-2 max-h-40 overflow-y-auto">
                         {orderItems.map((orderItem) => (
-                          <div key={orderItem.item.id} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                          <div key={orderItem.product_id} className="flex items-center justify-between bg-gray-50 p-2 rounded">
                             <div className="flex-1">
-                              <p className="font-medium">{orderItem.item.name}</p>
-                              <p className="text-sm text-gray-600">R$ {orderItem.item.price.toFixed(2)} cada</p>
+                              <p className="font-medium">{orderItem.product_name}</p>
+                              <p className="text-sm text-gray-600">R$ {orderItem.unit_price.toFixed(2)} cada</p>
                             </div>
                             <div className="flex items-center gap-2">
                               <Button
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                onClick={() => updateItemQuantity(orderItem.item.id, orderItem.quantity - 1)}
+                                onClick={() => updateItemQuantity(orderItem.product_id, orderItem.quantity - 1)}
                               >
                                 <Minus className="h-3 w-3" />
                               </Button>
@@ -447,7 +401,7 @@ const Garcon = () => {
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                onClick={() => updateItemQuantity(orderItem.item.id, orderItem.quantity + 1)}
+                                onClick={() => updateItemQuantity(orderItem.product_id, orderItem.quantity + 1)}
                               >
                                 <Plus className="h-3 w-3" />
                               </Button>
@@ -455,7 +409,7 @@ const Garcon = () => {
                                 type="button"
                                 variant="destructive"
                                 size="sm"
-                                onClick={() => removeItemFromOrder(orderItem.item.id)}
+                                onClick={() => removeItemFromOrder(orderItem.product_id)}
                               >
                                 <Trash2 className="h-3 w-3" />
                               </Button>
@@ -489,7 +443,7 @@ const Garcon = () => {
                       variant="outline" 
                       onClick={() => {
                         setShowOrderForm(false);
-                        setNewOrder({ tableId: '', customers: '', notes: '' });
+                        setNewOrder({ tableId: '', customers: '', notes: '', customer_name: '', customer_phone: '' });
                         setOrderItems([]);
                       }} 
                       className="flex-1"
@@ -518,7 +472,7 @@ const Garcon = () => {
                       id="tableNumber"
                       value={newTableNumber}
                       onChange={(e) => setNewTableNumber(e.target.value)}
-                      placeholder="Ex: Mesa 04"
+                      placeholder="Ex: 10"
                       required
                     />
                   </div>

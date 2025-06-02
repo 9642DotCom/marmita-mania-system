@@ -1,9 +1,13 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, DollarSign, Clock, CheckCircle, LogOut } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Search, DollarSign, Clock, CheckCircle, LogOut, CreditCard } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDatabase } from '@/hooks/useDatabase';
 import { Order } from '@/types/database';
@@ -11,20 +15,33 @@ import { toast } from '@/hooks/use-toast';
 
 const Caixa = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState('dinheiro');
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const { signOut } = useAuth();
   const { useOrders, processPayment } = useDatabase();
   const { data: orders = [], isLoading } = useOrders();
 
-  const handlePayment = async (orderId: string) => {
+  const handlePaymentClick = (order: Order) => {
+    setSelectedOrder(order);
+    setPaymentMethod('dinheiro');
+    setIsPaymentDialogOpen(true);
+  };
+
+  const handleConfirmPayment = async () => {
+    if (!selectedOrder) return;
+
     try {
       await processPayment.mutate(
-        orderId,
+        selectedOrder.id,
         {
           onSuccess: () => {
             toast({
               title: "Pagamento processado! 💰",
-              description: "Pedido finalizado e mesa liberada",
+              description: `Pagamento de R$ ${selectedOrder.total_amount.toFixed(2)} recebido via ${paymentMethod}. Mesa liberada.`,
             });
+            setIsPaymentDialogOpen(false);
+            setSelectedOrder(null);
           },
           onError: (error) => {
             toast({
@@ -41,6 +58,19 @@ const Caixa = () => {
         description: error.message || "Ocorreu um erro inesperado",
         variant: "destructive"
       });
+    }
+  };
+
+  const getPaymentMethodLabel = (method: string) => {
+    switch (method) {
+      case 'dinheiro':
+        return 'Dinheiro 💵';
+      case 'cartao':
+        return 'Cartão 💳';
+      case 'pix':
+        return 'PIX 📱';
+      default:
+        return method;
     }
   };
 
@@ -199,11 +229,12 @@ const Caixa = () => {
                       {getStatusBadge(order.status, order.notes)}
                       {!isPaid && (
                         <Button 
-                          onClick={() => handlePayment(order.id)}
+                          onClick={() => handlePaymentClick(order)}
                           className="bg-green-600 hover:bg-green-700"
                           disabled={processPayment.isPending}
                         >
-                          {processPayment.isPending ? 'Processando...' : 'Processar Pagamento'}
+                          <CreditCard className="h-4 w-4 mr-2" />
+                          Processar Pagamento
                         </Button>
                       )}
                     </div>
@@ -222,6 +253,73 @@ const Caixa = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Dialog de Confirmação de Pagamento */}
+        <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                Processar Pagamento
+              </DialogTitle>
+            </DialogHeader>
+            
+            {selectedOrder && (
+              <div className="space-y-6">
+                <div className="text-center p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">Valor Total</p>
+                  <p className="text-3xl font-bold text-green-600">
+                    R$ {selectedOrder.total_amount.toFixed(2)}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Mesa {selectedOrder.tables?.number} • Pedido #{selectedOrder.id.slice(-6)}
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Forma de Pagamento</Label>
+                  <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
+                    <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50">
+                      <RadioGroupItem value="dinheiro" id="dinheiro" />
+                      <Label htmlFor="dinheiro" className="flex-1 cursor-pointer">
+                        💵 Dinheiro
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50">
+                      <RadioGroupItem value="cartao" id="cartao" />
+                      <Label htmlFor="cartao" className="flex-1 cursor-pointer">
+                        💳 Cartão
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50">
+                      <RadioGroupItem value="pix" id="pix" />
+                      <Label htmlFor="pix" className="flex-1 cursor-pointer">
+                        📱 PIX
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsPaymentDialogOpen(false)}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    onClick={handleConfirmPayment}
+                    disabled={processPayment.isPending}
+                    className="flex-1 bg-green-600 hover:bg-green-700"
+                  >
+                    {processPayment.isPending ? 'Finalizando...' : 'Finalizar Pagamento'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

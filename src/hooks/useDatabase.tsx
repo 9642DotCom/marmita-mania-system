@@ -313,13 +313,13 @@ export const useDatabase = () => {
 
   // Nova função para processar pagamento no caixa
   const processPayment = useAuthenticatedMutation({
-    mutationFn: async (orderId: string) => {
-      console.log(`Processing payment for order ${orderId}`);
+    mutationFn: async ({ orderId, paymentMethod }: { orderId: string; paymentMethod?: string }) => {
+      console.log(`Processing payment for order ${orderId} via ${paymentMethod || 'não especificado'}`);
       
       // Primeiro buscar o pedido para verificar se é local e qual mesa
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
-        .select('table_id, order_type, status, notes')
+        .select('table_id, order_type, status, notes, total_amount')
         .eq('id', orderId)
         .single();
 
@@ -347,13 +347,13 @@ export const useDatabase = () => {
         console.log(`Mesa ${orderData.table_id} liberada após pagamento`);
       }
 
-      // Atualizar o pedido para status "pago" (vamos usar um status personalizado)
-      // Como não temos esse status no enum, vamos manter como 'entregue' mas marcar como pago
+      // Marcar pedido como finalizado com informações de pagamento
+      const paymentNote = paymentMethod ? ` [PAGO - ${paymentMethod.toUpperCase()}]` : ' [PAGO]';
       const { data, error } = await supabase
         .from('orders')
         .update({ 
           status: 'entregue',
-          notes: (orderData.notes || '') + ' [PAGO]' 
+          notes: (orderData.notes || '') + paymentNote
         })
         .eq('id', orderId)
         .select()
@@ -364,8 +364,16 @@ export const useDatabase = () => {
         throw error;
       }
       
-      console.log(`Payment processed for order ${orderId}`);
+      console.log(`Payment processed for order ${orderId} - R$ ${orderData.total_amount} via ${paymentMethod || 'não especificado'}`);
       return data;
+    },
+    queryKey: ['orders', 'tables'],
+  });
+
+  // Overload para manter compatibilidade
+  const processPaymentLegacy = useAuthenticatedMutation({
+    mutationFn: async (orderId: string) => {
+      return processPayment.mutateAsync({ orderId });
     },
     queryKey: ['orders', 'tables'],
   });
@@ -564,7 +572,7 @@ export const useDatabase = () => {
     createOrder,
     createOrderItems,
     updateOrderStatus,
-    processPayment,
+    processPayment: processPaymentLegacy, // Manter compatibilidade
     
     // Users
     useUsers,

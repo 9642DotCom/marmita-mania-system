@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CartItem } from '@/hooks/useCart';
 import { toast } from '@/hooks/use-toast';
+import { useDatabase } from '@/hooks/useDatabase';
 import CustomerForm from './CustomerForm';
 
 interface CustomerData {
@@ -19,8 +20,8 @@ interface CartProps {
   isOpen: boolean;
   onClose: () => void;
   cartItems: CartItem[];
-  onUpdateQuantity: (id: number, quantity: number) => void;
-  onRemoveItem: (id: number) => void;
+  onUpdateQuantity: (id: string, quantity: number) => void; // Corrigido para string
+  onRemoveItem: (id: string) => void; // Corrigido para string
   onClearCart: () => void;
   totalPrice: number;
 }
@@ -35,6 +36,7 @@ const Cart = ({
   totalPrice
 }: CartProps) => {
   const [showCustomerForm, setShowCustomerForm] = useState(false);
+  const { createOrder, createOrderItems } = useDatabase();
 
   const handleCheckout = () => {
     if (cartItems.length === 0) {
@@ -49,19 +51,55 @@ const Cart = ({
     setShowCustomerForm(true);
   };
 
-  const handleCustomerSubmit = (customerData: CustomerData) => {
-    // Aqui você pode enviar os dados para um backend ou processar localmente
-    console.log('Dados do cliente:', customerData);
-    console.log('Itens do pedido:', cartItems);
-    
-    toast({
-      title: "Pedido realizado com sucesso!",
-      description: `Olá ${customerData.name}! Seu pedido de R$ ${totalPrice.toFixed(2)} foi enviado para a cozinha. Tempo estimado: 30-45 minutos.`,
-    });
-    
-    setShowCustomerForm(false);
-    onClearCart();
-    onClose();
+  const handleCustomerSubmit = async (customerData: CustomerData) => {
+    try {
+      console.log('Criando pedido com dados:', { customerData, cartItems, totalPrice });
+      
+      // Criar o pedido
+      const orderData = {
+        customer_name: customerData.name,
+        customer_phone: customerData.whatsapp,
+        customer_address: customerData.address,
+        status: 'pendente' as const,
+        total_amount: totalPrice,
+        order_type: 'delivery' as const,
+        notes: `Pedido de delivery para ${customerData.name}`
+      };
+
+      const order = await createOrder.mutateAsync(orderData);
+      console.log('Pedido criado:', order);
+
+      // Criar os itens do pedido
+      const orderItems = cartItems.map(item => ({
+        product_id: item.id,
+        quantity: item.quantity,
+        unit_price: item.price,
+        notes: `${item.name}`
+      }));
+
+      await createOrderItems.mutateAsync({
+        orderId: order.id,
+        items: orderItems
+      });
+
+      console.log('Itens do pedido criados:', orderItems);
+      
+      toast({
+        title: "Pedido realizado com sucesso!",
+        description: `Olá ${customerData.name}! Seu pedido de R$ ${totalPrice.toFixed(2)} foi enviado para a cozinha. Tempo estimado: 30-45 minutos.`,
+      });
+      
+      setShowCustomerForm(false);
+      onClearCart();
+      onClose();
+    } catch (error) {
+      console.error('Erro ao criar pedido:', error);
+      toast({
+        title: "Erro ao criar pedido",
+        description: "Ocorreu um erro ao processar seu pedido. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   };
 
   if (!isOpen) return null;
@@ -96,7 +134,7 @@ const Cart = ({
                   {cartItems.map((item) => (
                     <div key={item.id} className="flex items-center space-x-3 border-b pb-3">
                       <img
-                        src={`https://images.unsplash.com/${item.image}?auto=format&fit=crop&w=100&q=80`}
+                        src={item.image || '/placeholder.svg'}
                         alt={item.name}
                         className="w-16 h-16 object-cover rounded-lg"
                       />
@@ -151,8 +189,9 @@ const Cart = ({
                       onClick={handleCheckout}
                       className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
                       size="lg"
+                      disabled={createOrder.isPending}
                     >
-                      Finalizar Pedido
+                      {createOrder.isPending ? 'Processando...' : 'Finalizar Pedido'}
                     </Button>
                     
                     <Button

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 
 export interface MarmitaItem {
-  id: number;
+  id: string; // Mudado de number para string para suportar UUIDs do banco
   name: string;
   description: string;
   price: number;
@@ -35,11 +35,11 @@ export const useCart = () => {
     });
   };
 
-  const removeFromCart = (id: number) => {
+  const removeFromCart = (id: string) => { // Mudado de number para string
     setCartItems(currentItems => currentItems.filter(item => item.id !== id));
   };
 
-  const updateQuantity = (id: number, quantity: number) => {
+  const updateQuantity = (id: string, quantity: number) => { // Mudado de number para string
     if (quantity <= 0) {
       removeFromCart(id);
       return;

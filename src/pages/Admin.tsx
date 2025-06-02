@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import AdminSidebar from '@/components/admin/AdminSidebar';
@@ -8,6 +7,7 @@ import OrderManagement from '@/components/admin/OrderManagement';
 import UserManagement from '@/components/admin/UserManagement';
 import AdminHeader from '@/components/admin/AdminHeader';
 import AdminStats from '@/components/admin/AdminStats';
+import AdminCharts from '@/components/admin/AdminCharts';
 import { useAuth } from '@/hooks/useAuth';
 
 export type AdminSection = 'dashboard' | 'products' | 'categories' | 'orders' | 'users';
@@ -58,6 +58,7 @@ const Admin = () => {
               <p className="text-gray-600">Visão geral do sistema de gerenciamento</p>
             </div>
             <AdminStats />
+            <AdminCharts />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white p-6 rounded-lg shadow">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Ações Rápidas</h3>

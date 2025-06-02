@@ -83,6 +83,68 @@ export type Database = {
         }
         Relationships: []
       }
+      company_settings: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          id: string
+          item1_description: string | null
+          item1_title: string | null
+          item2_description: string | null
+          item2_title: string | null
+          item3_description: string | null
+          item3_title: string | null
+          logo_url: string | null
+          restaurant_name: string | null
+          restaurant_slogan: string | null
+          site_description: string | null
+          site_title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          id?: string
+          item1_description?: string | null
+          item1_title?: string | null
+          item2_description?: string | null
+          item2_title?: string | null
+          item3_description?: string | null
+          item3_title?: string | null
+          logo_url?: string | null
+          restaurant_name?: string | null
+          restaurant_slogan?: string | null
+          site_description?: string | null
+          site_title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          item1_description?: string | null
+          item1_title?: string | null
+          item2_description?: string | null
+          item2_title?: string | null
+          item3_description?: string | null
+          item3_title?: string | null
+          logo_url?: string | null
+          restaurant_name?: string | null
+          restaurant_slogan?: string | null
+          site_description?: string | null
+          site_title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dados_whatsapp: {
         Row: {
           avaliacao: string | null

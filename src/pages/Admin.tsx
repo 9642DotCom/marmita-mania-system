@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import AdminSidebar from '@/components/admin/AdminSidebar';
@@ -5,12 +6,13 @@ import ProductManagement from '@/components/admin/ProductManagement';
 import CategoryManagement from '@/components/admin/CategoryManagement';
 import OrderManagement from '@/components/admin/OrderManagement';
 import UserManagement from '@/components/admin/UserManagement';
+import CompanySettings from '@/components/admin/CompanySettings';
 import AdminHeader from '@/components/admin/AdminHeader';
 import AdminStats from '@/components/admin/AdminStats';
 import AdminCharts from '@/components/admin/AdminCharts';
 import { useAuth } from '@/hooks/useAuth';
 
-export type AdminSection = 'dashboard' | 'products' | 'categories' | 'orders' | 'users';
+export type AdminSection = 'dashboard' | 'products' | 'categories' | 'orders' | 'users' | 'settings';
 
 const Admin = () => {
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
@@ -81,6 +83,12 @@ const Admin = () => {
                   >
                     → Gerenciar Usuários
                   </button>
+                  <button 
+                    onClick={() => setActiveSection('settings')}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    → Configurações da Empresa
+                  </button>
                 </div>
               </div>
               <div className="bg-white p-6 rounded-lg shadow">
@@ -102,6 +110,8 @@ const Admin = () => {
         return <OrderManagement />;
       case 'users':
         return <UserManagement />;
+      case 'settings':
+        return <CompanySettings />;
       default:
         return <ProductManagement />;
     }

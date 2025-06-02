@@ -82,3 +82,21 @@ export interface OrderItem {
   notes?: string;
   created_at: string;
 }
+
+export interface CompanySettings {
+  id: string;
+  company_id: string;
+  restaurant_name?: string;
+  restaurant_slogan?: string;
+  logo_url?: string;
+  site_title?: string;
+  site_description?: string;
+  item1_title?: string;
+  item1_description?: string;
+  item2_title?: string;
+  item2_description?: string;
+  item3_title?: string;
+  item3_description?: string;
+  created_at: string;
+  updated_at: string;
+}

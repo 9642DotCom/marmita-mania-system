@@ -550,6 +550,88 @@ export const useDatabase = () => {
     queryKey: ['tables'],
   });
 
+  // Company Settings hooks
+  const useCompanySettings = () => {
+    return useQuery({
+      queryKey: ['company-settings', profile?.company_id],
+      queryFn: async () => {
+        if (!profile?.company_id) {
+          console.log('No company_id found in profile, skipping company settings query');
+          return null;
+        }
+        
+        const { data, error } = await supabase
+          .from('company_settings')
+          .select('*')
+          .eq('company_id', profile.company_id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching company settings:', error);
+          throw error;
+        }
+        return data || null;
+      },
+      enabled: !!profile?.company_id,
+    });
+  };
+
+  const updateCompanySettings = useAuthenticatedMutation({
+    mutationFn: async (settingsData: {
+      restaurant_name?: string;
+      restaurant_slogan?: string;
+      logo_url?: string;
+      site_title?: string;
+      site_description?: string;
+      item1_title?: string;
+      item1_description?: string;
+      item2_title?: string;
+      item2_description?: string;
+      item3_title?: string;
+      item3_description?: string;
+    }) => {
+      if (!profile?.company_id) {
+        throw new Error('Erro: ID da empresa não encontrado. Tente fazer login novamente.');
+      }
+
+      // Primeiro, tentar atualizar se já existe
+      const { data: existingData } = await supabase
+        .from('company_settings')
+        .select('id')
+        .eq('company_id', profile.company_id)
+        .single();
+
+      if (existingData) {
+        // Atualizar registro existente
+        const { data, error } = await supabase
+          .from('company_settings')
+          .update(settingsData)
+          .eq('company_id', profile.company_id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      } else {
+        // Criar novo registro
+        const { data, error } = await supabase
+          .from('company_settings')
+          .insert([
+            {
+              ...settingsData,
+              company_id: profile.company_id,
+            }
+          ])
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      }
+    },
+    queryKey: ['company-settings'],
+  });
+
   return {
     // Categories
     useCategories,
@@ -579,5 +661,9 @@ export const useDatabase = () => {
     createUser,
     updateUser,
     deleteUser,
+    
+    // Company Settings
+    useCompanySettings,
+    updateCompanySettings,
   };
 };

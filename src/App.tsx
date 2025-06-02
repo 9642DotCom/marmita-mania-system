@@ -21,8 +21,8 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <AuthLayout>
-        <BrowserRouter>
+      <BrowserRouter>
+        <AuthLayout>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/admin" element={<Admin />} />
@@ -34,8 +34,8 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
-      </AuthLayout>
+        </AuthLayout>
+      </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );

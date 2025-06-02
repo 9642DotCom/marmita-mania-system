@@ -78,7 +78,7 @@ const CompanySetupForm = ({ user, onSetupComplete }: CompanySetupFormProps) => {
           {
             id: currentUser.user.id,
             company_id: companyData.id,
-            name: user.user_metadata?.name || userName || currentUser.user.email,
+            name: user.user_metadata?.name || currentUser.user.email,
             email: currentUser.user.email,
             role: 'admin',
           }

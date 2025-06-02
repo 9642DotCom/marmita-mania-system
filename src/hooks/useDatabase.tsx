@@ -279,17 +279,17 @@ export const useDatabase = () => {
       // DEPOIS atualizar o status da mesa baseado no status do pedido
       if (orderData.order_type === 'local' && orderData.table_id) {
         if (status === 'entregue') {
-          // Quando garçom entrega na mesa, cliente está comendo
+          // Quando garçom entrega na mesa, a mesa continua ocupada (cliente comendo)
           const { error: tableError } = await supabase
             .from('tables')
-            .update({ status: 'eating' })
+            .update({ status: 'occupied' })
             .eq('id', orderData.table_id);
 
           if (tableError) {
-            console.error('Error updating table status to eating:', tableError);
+            console.error('Error keeping table occupied:', tableError);
             throw tableError;
           }
-          console.log(`Mesa ${orderData.table_id} agora está com status "eating" - cliente comendo`);
+          console.log(`Mesa ${orderData.table_id} continua ocupada - cliente comendo`);
         } else if (status === 'cancelado') {
           // Se pedido foi cancelado, liberar a mesa
           const { error: tableError } = await supabase

@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Building2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
@@ -16,6 +17,7 @@ const LoginForm = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [companyName, setCompanyName] = useState('');
   const [userName, setUserName] = useState('');
+  const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +35,8 @@ const LoginForm = () => {
         title: "Login realizado com sucesso!",
         description: "Bem-vindo de volta!",
       });
+
+      // O redirecionamento será feito pelo useAuth hook baseado no role
     } catch (error: any) {
       toast({
         title: "Erro no login",
@@ -106,11 +110,11 @@ const LoginForm = () => {
 
         toast({
           title: "Conta criada com sucesso!",
-          description: "Sua empresa foi configurada. Você já está logado!",
+          description: "Sua empresa foi configurada. Redirecionando para o painel admin...",
         });
 
-        // Recarregar a página para atualizar o estado
-        window.location.reload();
+        // Redirecionar para admin após cadastro bem-sucedido
+        navigate('/admin');
       }
     } catch (error: any) {
       console.error('Erro detalhado:', error);

@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { Upload, X, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuthenticatedMutation } from '@/hooks/useAuthenticatedMutation';
+import { toast } from '@/hooks/use-toast';
 
 interface ImageUploadProps {
   currentImageUrl?: string;
@@ -11,29 +13,12 @@ interface ImageUploadProps {
 }
 
 const ImageUpload = ({ currentImageUrl, onImageChange, onImageRemove }: ImageUploadProps) => {
-  const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const uploadMutation = useAuthenticatedMutation({
+    mutationFn: async (file: File) => {
+      setUploadProgress(0);
 
-    // Validar tipo de arquivo
-    if (!file.type.startsWith('image/')) {
-      alert('Por favor, selecione apenas arquivos de imagem.');
-      return;
-    }
-
-    // Validar tamanho (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('A imagem deve ter no máximo 5MB.');
-      return;
-    }
-
-    setUploading(true);
-    setUploadProgress(0);
-
-    try {
       // Gerar nome único para o arquivo
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -54,15 +39,53 @@ const ImageUpload = ({ currentImageUrl, onImageChange, onImageRemove }: ImageUpl
         .from('product-images')
         .getPublicUrl(filePath);
 
-      onImageChange(publicUrl);
       setUploadProgress(100);
-    } catch (error) {
+      return publicUrl;
+    },
+    onSuccess: (publicUrl) => {
+      onImageChange(publicUrl);
+      toast({
+        title: "Sucesso",
+        description: "Imagem enviada com sucesso!",
+      });
+      setTimeout(() => setUploadProgress(0), 1000);
+    },
+    onError: (error) => {
       console.error('Erro no upload:', error);
-      alert('Erro ao fazer upload da imagem. Tente novamente.');
-    } finally {
-      setUploading(false);
       setUploadProgress(0);
+      toast({
+        title: "Erro no upload",
+        description: "Não foi possível enviar a imagem. Tente novamente.",
+        variant: "destructive"
+      });
     }
+  });
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validar tipo de arquivo
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Arquivo inválido",
+        description: "Por favor, selecione apenas arquivos de imagem.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validar tamanho (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Arquivo muito grande",
+        description: "A imagem deve ter no máximo 5MB.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    uploadMutation.mutate(file);
   };
 
   const handleRemoveImage = () => {
@@ -105,7 +128,7 @@ const ImageUpload = ({ currentImageUrl, onImageChange, onImageRemove }: ImageUpl
                   type="file"
                   accept="image/*"
                   onChange={handleFileUpload}
-                  disabled={uploading}
+                  disabled={uploadMutation.isPending}
                   className="hidden"
                 />
               </label>
@@ -114,7 +137,7 @@ const ImageUpload = ({ currentImageUrl, onImageChange, onImageRemove }: ImageUpl
         </div>
       )}
 
-      {uploading && (
+      {uploadMutation.isPending && (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Upload className="h-4 w-4 animate-pulse" />

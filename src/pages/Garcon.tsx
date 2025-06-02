@@ -367,15 +367,17 @@ const Garcon = () => {
       table_id: order.table_id
     });
     
-    return order.status === 'preparando' && order.order_type === 'local';
+    // Pedidos locais só aparecem quando status = 'saiu_entrega' (cozinha terminou)
+    return order.status === 'saiu_entrega' && order.order_type === 'local';
   });
 
   const deliveryOrders = orders.filter(order => 
+    // Pedidos delivery também só quando saiu_entrega (para o motoboy)
     order.status === 'saiu_entrega' && order.order_type === 'delivery'
   );
 
   console.log('📊 Estados dos pedidos:');
-  console.log('🍽️ Pedidos locais prontos (preparando):', readyOrders.length);
+  console.log('🍽️ Pedidos locais prontos (saiu_entrega):', readyOrders.length);
   console.log('🏍️ Pedidos delivery em rota (saiu_entrega):', deliveryOrders.length);
   console.log('📋 Todos os pedidos:', orders.map(o => ({ 
     id: o.id.slice(0, 8), 

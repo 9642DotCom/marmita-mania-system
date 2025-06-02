@@ -25,6 +25,8 @@ const SignUpForm = ({ onSignUpSuccess, onBackToLogin }: SignUpFormProps) => {
     setLoading(true);
 
     try {
+      console.log('Iniciando cadastro de usuário...');
+      
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -35,7 +37,12 @@ const SignUpForm = ({ onSignUpSuccess, onBackToLogin }: SignUpFormProps) => {
         }
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        console.error('Erro no cadastro:', authError);
+        throw authError;
+      }
+
+      console.log('Usuário criado:', authData.user);
 
       if (authData.user) {
         toast({
@@ -43,7 +50,12 @@ const SignUpForm = ({ onSignUpSuccess, onBackToLogin }: SignUpFormProps) => {
           description: "Agora vamos configurar seu restaurante.",
         });
 
-        onSignUpSuccess(authData.user);
+        // Passar os dados do usuário e da sessão para o próximo passo
+        onSignUpSuccess({
+          ...authData.user,
+          email: authData.user.email,
+          session: authData.session
+        });
       }
     } catch (error: any) {
       console.error('Erro no cadastro:', error);

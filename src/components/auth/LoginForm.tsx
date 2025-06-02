@@ -49,11 +49,13 @@ const LoginForm = () => {
   };
 
   const handleSignUpSuccess = (user: any) => {
+    console.log('Usuário criado com sucesso:', user);
     setNewUser(user);
     setCurrentStep('company-setup');
   };
 
   const handleCompanySetupComplete = () => {
+    console.log('Configuração da empresa finalizada, redirecionando...');
     window.location.href = '/admin';
   };
 

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
-import { Building2, Upload } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 
 interface CompanySetupFormProps {
   user: any;
@@ -27,18 +27,27 @@ const CompanySetupForm = ({ user, onSetupComplete }: CompanySetupFormProps) => {
     setLoading(true);
 
     try {
-      // 1. Fazer login do usuário
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: '', // Precisamos encontrar uma forma melhor de lidar com isso
-      });
+      console.log('Configurando empresa para usuário:', user);
 
-      // Se não conseguir fazer login com senha, tentar com token de sessão
-      if (signInError) {
-        console.log('Usuário já deve estar autenticado');
+      // Se temos uma sessão, usá-la; caso contrário, tentar fazer login
+      if (user.session) {
+        console.log('Usando sessão existente');
+        await supabase.auth.setSession({
+          access_token: user.session.access_token,
+          refresh_token: user.session.refresh_token
+        });
       }
 
-      // 2. Criar empresa
+      // Verificar se o usuário está autenticado
+      const { data: currentUser } = await supabase.auth.getUser();
+      console.log('Usuário atual:', currentUser);
+
+      if (!currentUser.user) {
+        throw new Error('Usuário não está autenticado');
+      }
+
+      // 1. Criar empresa
+      console.log('Criando empresa...');
       const { data: companyData, error: companyError } = await supabase
         .from('companies')
         .insert([
@@ -48,35 +57,50 @@ const CompanySetupForm = ({ user, onSetupComplete }: CompanySetupFormProps) => {
             address: address,
             horario_funcionamento: horarioFuncionamento,
             logo_url: logoUrl || null,
-            owner_id: user.id,
+            owner_id: currentUser.user.id,
           }
         ])
         .select()
         .single();
 
-      if (companyError) throw companyError;
+      if (companyError) {
+        console.error('Erro ao criar empresa:', companyError);
+        throw companyError;
+      }
 
-      // 3. Criar perfil do usuário como admin
+      console.log('Empresa criada:', companyData);
+
+      // 2. Criar perfil do usuário como admin
+      console.log('Criando perfil...');
       const { error: profileError } = await supabase
         .from('profiles')
         .insert([
           {
-            id: user.id,
+            id: currentUser.user.id,
             company_id: companyData.id,
-            name: user.user_metadata?.name || user.email,
-            email: user.email,
+            name: user.user_metadata?.name || userName || currentUser.user.email,
+            email: currentUser.user.email,
             role: 'admin',
           }
         ]);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Erro ao criar perfil:', profileError);
+        throw profileError;
+      }
+
+      console.log('Perfil criado com sucesso');
 
       toast({
         title: "Restaurante configurado com sucesso!",
         description: "Redirecionando para o painel administrativo...",
       });
 
-      onSetupComplete();
+      // Aguardar um pouco para que os dados sejam processados
+      setTimeout(() => {
+        onSetupComplete();
+      }, 1000);
+
     } catch (error: any) {
       console.error('Erro na configuração:', error);
       toast({

@@ -25,6 +25,7 @@ export const useAuth = () => {
     // Escutar mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id);
         setUser(session?.user ?? null);
         if (session?.user) {
           loadProfile(session.user.id);
@@ -40,6 +41,7 @@ export const useAuth = () => {
 
   const loadProfile = async (userId: string) => {
     try {
+      console.log('Carregando perfil para usuário:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -50,11 +52,14 @@ export const useAuth = () => {
         console.error('Erro ao carregar perfil:', error);
         setProfile(null);
       } else {
+        console.log('Perfil carregado:', data);
         setProfile(data as Profile);
         
-        // Redirecionar baseado no role do usuário
-        if (data) {
-          redirectBasedOnRole(data.role);
+        // Redirecionar baseado no role do usuário apenas se estiver na página de auth
+        if (data && window.location.pathname === '/auth') {
+          setTimeout(() => {
+            redirectBasedOnRole(data.role);
+          }, 100);
         }
       }
     } catch (error) {
@@ -66,30 +71,27 @@ export const useAuth = () => {
   };
 
   const redirectBasedOnRole = (role: string) => {
-    console.log('Redirecionando usuário com role:', role);
+    console.log('Redirecionando usuário com role:', role, 'da página:', window.location.pathname);
     
-    // Só redireciona se estiver na página de auth
-    if (window.location.pathname === '/auth') {
-      switch (role) {
-        case 'admin':
-          navigate('/admin');
-          break;
-        case 'entregador':
-          navigate('/entregador');
-          break;
-        case 'caixa':
-          navigate('/caixa');
-          break;
-        case 'cozinha':
-          navigate('/cozinha');
-          break;
-        case 'garcon':
-          navigate('/garcon');
-          break;
-        default:
-          navigate('/');
-          break;
-      }
+    switch (role) {
+      case 'admin':
+        navigate('/admin');
+        break;
+      case 'entregador':
+        navigate('/entregador');
+        break;
+      case 'caixa':
+        navigate('/caixa');
+        break;
+      case 'cozinha':
+        navigate('/cozinha');
+        break;
+      case 'garcon':
+        navigate('/garcon');
+        break;
+      default:
+        navigate('/');
+        break;
     }
   };
 

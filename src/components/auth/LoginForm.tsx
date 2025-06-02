@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Building2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
@@ -17,7 +16,6 @@ const LoginForm = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [companyName, setCompanyName] = useState('');
   const [userName, setUserName] = useState('');
-  const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,42 +36,7 @@ const LoginForm = () => {
         description: "Bem-vindo de volta!",
       });
 
-      // Verificar o perfil do usuário para redirecionar
-      if (data.user) {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
-
-        if (profileError) {
-          console.error('Erro ao buscar perfil:', profileError);
-          navigate('/');
-        } else if (profileData) {
-          console.log('Perfil encontrado:', profileData);
-          // Redirecionar baseado no role
-          switch (profileData.role) {
-            case 'admin':
-              navigate('/admin');
-              break;
-            case 'entregador':
-              navigate('/entregador');
-              break;
-            case 'caixa':
-              navigate('/caixa');
-              break;
-            case 'cozinha':
-              navigate('/cozinha');
-              break;
-            case 'garcon':
-              navigate('/garcon');
-              break;
-            default:
-              navigate('/');
-              break;
-          }
-        }
-      }
+      // O redirecionamento será feito automaticamente pelo useAuth hook
     } catch (error: any) {
       console.error('Erro no login:', error);
       toast({
@@ -151,8 +114,7 @@ const LoginForm = () => {
           description: "Sua empresa foi configurada. Redirecionando para o painel admin...",
         });
 
-        // Redirecionar para admin após cadastro bem-sucedido
-        navigate('/admin');
+        // O redirecionamento será feito automaticamente pelo useAuth hook
       }
     } catch (error: any) {
       console.error('Erro detalhado:', error);

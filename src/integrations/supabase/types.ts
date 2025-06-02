@@ -188,6 +188,7 @@ export type Database = {
           customer_phone: string | null
           id: string
           notes: string | null
+          order_type: string | null
           status: Database["public"]["Enums"]["order_status"] | null
           table_id: string | null
           total_amount: number
@@ -202,6 +203,7 @@ export type Database = {
           customer_phone?: string | null
           id?: string
           notes?: string | null
+          order_type?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
           table_id?: string | null
           total_amount?: number
@@ -216,6 +218,7 @@ export type Database = {
           customer_phone?: string | null
           id?: string
           notes?: string | null
+          order_type?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
           table_id?: string | null
           total_amount?: number
@@ -342,6 +345,7 @@ export type Database = {
           created_at: string | null
           id: string
           number: number
+          status: string | null
           updated_at: string | null
         }
         Insert: {
@@ -351,6 +355,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           number: number
+          status?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -360,6 +365,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           number?: number
+          status?: string | null
           updated_at?: string | null
         }
         Relationships: [

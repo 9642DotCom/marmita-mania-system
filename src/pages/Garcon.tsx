@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Clock, Plus, Utensils, Trash2, Minus, LogOut } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Users, Clock, Plus, Utensils, Trash2, Minus, LogOut, Truck, UtensilsCrossed } from 'lucide-react';
 import { useDatabase } from '@/hooks/useDatabase';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -31,6 +33,8 @@ const Garcon = () => {
     notes: '',
     customer_name: '',
     customer_phone: '',
+    customer_address: '',
+    order_type: 'local' as 'local' | 'delivery',
   });
 
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -116,13 +120,34 @@ const Garcon = () => {
   const handleNewOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newOrder.tableId || orderItems.length === 0) {
+    if (orderItems.length === 0) {
       toast({
         title: "Erro",
-        description: "Selecione uma mesa e adicione pelo menos um item",
+        description: "Adicione pelo menos um item ao pedido",
         variant: "destructive"
       });
       return;
+    }
+
+    // Validações específicas por tipo de pedido
+    if (newOrder.order_type === 'local') {
+      if (!newOrder.tableId) {
+        toast({
+          title: "Erro",
+          description: "Selecione uma mesa para pedidos locais",
+          variant: "destructive"
+        });
+        return;
+      }
+    } else if (newOrder.order_type === 'delivery') {
+      if (!newOrder.customer_name || !newOrder.customer_phone || !newOrder.customer_address) {
+        toast({
+          title: "Erro",
+          description: "Para delivery, preencha nome, telefone e endereço do cliente",
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
     if (!profile?.company_id) {
@@ -135,20 +160,23 @@ const Garcon = () => {
     }
 
     try {
-      console.log('🍽️ Enviando pedido para a cozinha...');
+      console.log('🍽️ Enviando pedido...');
       console.log('👤 Garçom:', profile.name);
       console.log('🏢 Empresa:', profile.company_id);
+      console.log('📋 Tipo:', newOrder.order_type);
       console.log('📋 Dados do pedido:', newOrder);
       console.log('🛒 Itens:', orderItems);
 
       // Criar pedido
       const orderData = {
-        table_id: newOrder.tableId,
+        table_id: newOrder.order_type === 'local' ? newOrder.tableId : null,
         customer_name: newOrder.customer_name || 'Cliente não informado',
         customer_phone: newOrder.customer_phone || '',
+        customer_address: newOrder.customer_address || '',
         total_amount: calculateOrderTotal(),
         notes: newOrder.notes || '',
         status: 'pendente' as const,
+        order_type: newOrder.order_type,
       };
 
       console.log('📝 Criando pedido com dados:', orderData);
@@ -167,22 +195,34 @@ const Garcon = () => {
         }))
       });
 
-      console.log('🎉 Pedido enviado para a cozinha com sucesso!');
+      console.log('🎉 Pedido criado com sucesso!');
+
+      const deliveryInfo = newOrder.order_type === 'delivery' 
+        ? ' - Será enviado para o motoboy' 
+        : ' - Você será responsável pela entrega';
 
       toast({
-        title: "Pedido enviado! 🍽️",
-        description: `Pedido #${order.id.slice(0, 8)} foi enviado para a cozinha. Total: R$ ${calculateOrderTotal().toFixed(2)}`,
+        title: `Pedido ${newOrder.order_type === 'delivery' ? 'de delivery' : 'local'} criado! 🍽️`,
+        description: `Pedido #${order.id.slice(0, 8)} foi enviado para a cozinha. Total: R$ ${calculateOrderTotal().toFixed(2)}${deliveryInfo}`,
       });
 
       // Limpar formulário
-      setNewOrder({ tableId: '', customers: '', notes: '', customer_name: '', customer_phone: '' });
+      setNewOrder({ 
+        tableId: '', 
+        customers: '', 
+        notes: '', 
+        customer_name: '', 
+        customer_phone: '', 
+        customer_address: '',
+        order_type: 'local'
+      });
       setOrderItems([]);
       setShowOrderForm(false);
 
     } catch (error: any) {
-      console.error('❌ Erro ao enviar pedido:', error);
+      console.error('❌ Erro ao criar pedido:', error);
       toast({
-        title: "Erro ao enviar pedido",
+        title: "Erro ao criar pedido",
         description: error.message || "Ocorreu um erro inesperado. Tente novamente.",
         variant: "destructive"
       });
@@ -214,13 +254,13 @@ const Garcon = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'available':
-        return <Badge variant="default">Livre</Badge>;
+        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Livre</Badge>;
       case 'occupied':
-        return <Badge variant="secondary">Ocupada</Badge>;
-      case 'waiting':
-        return <Badge variant="destructive">Aguardando</Badge>;
+        return <Badge variant="default" className="bg-red-500">Ocupada</Badge>;
+      case 'waiting_payment':
+        return <Badge variant="secondary" className="bg-yellow-500">Aguardando Pagamento</Badge>;
       default:
-        return <Badge variant="secondary">Livre</Badge>;
+        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Livre</Badge>;
     }
   };
 
@@ -229,15 +269,17 @@ const Garcon = () => {
       case 'available':
         return 'border-green-300 bg-green-50';
       case 'occupied':
-        return 'border-blue-300 bg-blue-50';
-      case 'waiting':
         return 'border-red-300 bg-red-50';
+      case 'waiting_payment':
+        return 'border-yellow-300 bg-yellow-50';
       default:
-        return 'border-gray-300 bg-gray-50';
+        return 'border-green-300 bg-green-50';
     }
   };
 
-  const availableTables = tables.filter(t => t.available);
+  const availableTables = tables.filter(t => t.status === 'available');
+  const occupiedTables = tables.filter(t => t.status === 'occupied');
+  const waitingPaymentTables = tables.filter(t => t.status === 'waiting_payment');
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -285,7 +327,7 @@ const Garcon = () => {
               <div className="flex items-center">
                 <Users className="h-8 w-8 text-green-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Mesas Disponíveis</p>
+                  <p className="text-sm font-medium text-gray-600">Mesas Livres</p>
                   <p className="text-2xl font-bold text-gray-900">{availableTables.length}</p>
                 </div>
               </div>
@@ -295,10 +337,10 @@ const Garcon = () => {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
-                <Clock className="h-8 w-8 text-orange-600" />
+                <UtensilsCrossed className="h-8 w-8 text-red-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Produtos Disponíveis</p>
-                  <p className="text-2xl font-bold text-gray-900">{products.length}</p>
+                  <p className="text-sm font-medium text-gray-600">Mesas Ocupadas</p>
+                  <p className="text-2xl font-bold text-gray-900">{occupiedTables.length}</p>
                 </div>
               </div>
             </CardContent>
@@ -310,7 +352,6 @@ const Garcon = () => {
                 <Button 
                   onClick={() => setShowOrderForm(true)}
                   className="w-full bg-green-600 hover:bg-green-700"
-                  disabled={availableTables.length === 0}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Novo Pedido
@@ -342,11 +383,11 @@ const Garcon = () => {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {tables.map((table) => (
-                <div key={table.id} className={`border-2 rounded-lg p-4 relative ${getStatusColor('available')}`}>
+                <div key={table.id} className={`border-2 rounded-lg p-4 relative ${getStatusColor(table.status || 'available')}`}>
                   <div className="flex justify-between items-start mb-3">
                     <h3 className="font-semibold text-lg">Mesa {table.number}</h3>
                     <div className="flex gap-2">
-                      {getStatusBadge('available')}
+                      {getStatusBadge(table.status || 'available')}
                     </div>
                   </div>
                   
@@ -356,11 +397,12 @@ const Garcon = () => {
                       variant="outline" 
                       size="sm"
                       onClick={() => {
-                        setNewOrder(prev => ({ ...prev, tableId: table.id }));
+                        setNewOrder(prev => ({ ...prev, tableId: table.id, order_type: 'local' }));
                         setShowOrderForm(true);
                       }}
+                      disabled={table.status === 'occupied'}
                     >
-                      Fazer Pedido
+                      {table.status === 'occupied' ? 'Mesa Ocupada' : 'Fazer Pedido'}
                     </Button>
                   </div>
                 </div>
@@ -378,41 +420,96 @@ const Garcon = () => {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleNewOrder} className="space-y-4">
+                  
+                  {/* Tipo de Pedido */}
                   <div>
-                    <Label htmlFor="table">Mesa *</Label>
-                    <Select value={newOrder.tableId} onValueChange={(value) => setNewOrder(prev => ({ ...prev, tableId: value }))}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma mesa" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableTables.map((table) => (
-                          <SelectItem key={table.id} value={table.id}>
-                            Mesa {table.number} (até {table.capacity} pessoas)
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label className="text-base font-medium">Tipo de Pedido *</Label>
+                    <RadioGroup 
+                      value={newOrder.order_type} 
+                      onValueChange={(value: 'local' | 'delivery') => setNewOrder(prev => ({ 
+                        ...prev, 
+                        order_type: value,
+                        tableId: value === 'delivery' ? '' : prev.tableId
+                      }))}
+                      className="flex gap-6 mt-2"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="local" id="local" />
+                        <Label htmlFor="local" className="flex items-center gap-2">
+                          <UtensilsCrossed className="h-4 w-4" />
+                          Comer no Local
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="delivery" id="delivery" />
+                        <Label htmlFor="delivery" className="flex items-center gap-2">
+                          <Truck className="h-4 w-4" />
+                          Delivery
+                        </Label>
+                      </div>
+                    </RadioGroup>
                   </div>
 
+                  {/* Mesa (apenas para pedidos locais) */}
+                  {newOrder.order_type === 'local' && (
+                    <div>
+                      <Label htmlFor="table">Mesa *</Label>
+                      <Select value={newOrder.tableId} onValueChange={(value) => setNewOrder(prev => ({ ...prev, tableId: value }))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione uma mesa" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableTables.map((table) => (
+                            <SelectItem key={table.id} value={table.id}>
+                              Mesa {table.number} (até {table.capacity} pessoas)
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Dados do Cliente */}
                   <div>
-                    <Label htmlFor="customerName">Nome do Cliente</Label>
+                    <Label htmlFor="customerName">
+                      Nome do Cliente {newOrder.order_type === 'delivery' && '*'}
+                    </Label>
                     <Input
                       id="customerName"
                       value={newOrder.customer_name}
                       onChange={(e) => setNewOrder(prev => ({ ...prev, customer_name: e.target.value }))}
-                      placeholder="Nome do cliente (opcional)"
+                      placeholder="Nome do cliente"
+                      required={newOrder.order_type === 'delivery'}
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="customerPhone">Telefone do Cliente</Label>
+                    <Label htmlFor="customerPhone">
+                      Telefone do Cliente {newOrder.order_type === 'delivery' && '*'}
+                    </Label>
                     <Input
                       id="customerPhone"
                       value={newOrder.customer_phone}
                       onChange={(e) => setNewOrder(prev => ({ ...prev, customer_phone: e.target.value }))}
-                      placeholder="(11) 99999-9999 (opcional)"
+                      placeholder="(11) 99999-9999"
+                      required={newOrder.order_type === 'delivery'}
                     />
                   </div>
+
+                  {/* Endereço (apenas para delivery) */}
+                  {newOrder.order_type === 'delivery' && (
+                    <div>
+                      <Label htmlFor="customerAddress">Endereço de Entrega *</Label>
+                      <Textarea
+                        id="customerAddress"
+                        value={newOrder.customer_address}
+                        onChange={(e) => setNewOrder(prev => ({ ...prev, customer_address: e.target.value }))}
+                        placeholder="Rua, número, bairro, cidade..."
+                        required
+                        rows={2}
+                      />
+                    </div>
+                  )}
 
                   <div>
                     <Label>Adicionar Item *</Label>
@@ -500,16 +597,25 @@ const Garcon = () => {
                     <Button 
                       type="submit" 
                       className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3" 
-                      disabled={orderItems.length === 0 || !newOrder.tableId}
+                      disabled={orderItems.length === 0}
                     >
-                      🍽️ Enviar para Cozinha
+                      {newOrder.order_type === 'delivery' ? '🏍️' : '🍽️'} 
+                      {newOrder.order_type === 'delivery' ? ' Enviar para Motoboy' : ' Enviar para Cozinha'}
                     </Button>
                     <Button 
                       type="button" 
                       variant="outline" 
                       onClick={() => {
                         setShowOrderForm(false);
-                        setNewOrder({ tableId: '', customers: '', notes: '', customer_name: '', customer_phone: '' });
+                        setNewOrder({ 
+                          tableId: '', 
+                          customers: '', 
+                          notes: '', 
+                          customer_name: '', 
+                          customer_phone: '', 
+                          customer_address: '',
+                          order_type: 'local'
+                        });
                         setOrderItems([]);
                       }} 
                       className="flex-1 py-3"

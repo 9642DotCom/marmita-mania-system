@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,7 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Users, Clock, Plus, Utensils, Trash2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Users, Clock, Plus, Utensils, Trash2, Minus } from 'lucide-react';
+import { marmitas } from '@/data/marmitas';
+import { MarmitaItem } from '@/hooks/useCart';
 
 interface Table {
   id: number;
@@ -16,6 +18,21 @@ interface Table {
   order: string;
   total: number;
   startTime: string;
+}
+
+interface OrderItem {
+  item: MarmitaItem;
+  quantity: number;
+}
+
+interface Order {
+  id: string;
+  tableNumber: string;
+  items: OrderItem[];
+  total: number;
+  status: 'preparando' | 'pronto' | 'entregue';
+  createdAt: string;
+  notes?: string;
 }
 
 const Garcon = () => {
@@ -49,21 +66,109 @@ const Garcon = () => {
     }
   ]);
 
+  const [orders, setOrders] = useState<Order[]>([]);
+
   const [newOrder, setNewOrder] = useState({
-    table: '',
+    tableId: '',
     customers: '',
-    items: '',
     notes: ''
   });
+
+  const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+  const [selectedItemId, setSelectedItemId] = useState<string>('');
 
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [showAddTableForm, setShowAddTableForm] = useState(false);
   const [newTableNumber, setNewTableNumber] = useState('');
 
+  const addItemToOrder = () => {
+    if (!selectedItemId) return;
+    
+    const item = marmitas.find(m => m.id.toString() === selectedItemId);
+    if (!item) return;
+
+    const existingItem = orderItems.find(oi => oi.item.id === item.id);
+    if (existingItem) {
+      setOrderItems(orderItems.map(oi => 
+        oi.item.id === item.id 
+          ? { ...oi, quantity: oi.quantity + 1 }
+          : oi
+      ));
+    } else {
+      setOrderItems([...orderItems, { item, quantity: 1 }]);
+    }
+    setSelectedItemId('');
+  };
+
+  const removeItemFromOrder = (itemId: number) => {
+    setOrderItems(orderItems.filter(oi => oi.item.id !== itemId));
+  };
+
+  const updateItemQuantity = (itemId: number, quantity: number) => {
+    if (quantity <= 0) {
+      removeItemFromOrder(itemId);
+      return;
+    }
+    setOrderItems(orderItems.map(oi => 
+      oi.item.id === itemId 
+        ? { ...oi, quantity }
+        : oi
+    ));
+  };
+
+  const calculateOrderTotal = () => {
+    return orderItems.reduce((total, oi) => total + (oi.item.price * oi.quantity), 0);
+  };
+
   const handleNewOrder = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Novo pedido:', newOrder);
-    setNewOrder({ table: '', customers: '', items: '', notes: '' });
+    
+    if (!newOrder.tableId || orderItems.length === 0) {
+      alert('Selecione uma mesa e adicione pelo menos um item');
+      return;
+    }
+
+    const selectedTable = tables.find(t => t.id.toString() === newOrder.tableId);
+    if (!selectedTable) return;
+
+    // Gerar ID do pedido
+    const orderId = `#${String(orders.length + 1).padStart(3, '0')}`;
+    const now = new Date();
+    const orderTotal = calculateOrderTotal();
+
+    // Criar novo pedido
+    const order: Order = {
+      id: orderId,
+      tableNumber: selectedTable.number,
+      items: orderItems,
+      total: orderTotal,
+      status: 'preparando',
+      createdAt: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      notes: newOrder.notes
+    };
+
+    // Adicionar à lista de pedidos (enviando para cozinha)
+    setOrders([...orders, order]);
+
+    // Atualizar status da mesa
+    setTables(tables.map(table =>
+      table.id.toString() === newOrder.tableId
+        ? {
+            ...table,
+            status: 'ocupada' as const,
+            customers: parseInt(newOrder.customers),
+            order: orderId,
+            total: orderTotal,
+            startTime: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+          }
+        : table
+    ));
+
+    console.log('Pedido enviado para a cozinha:', order);
+
+    // Limpar formulário
+    setNewOrder({ tableId: '', customers: '', notes: '' });
+    setOrderItems([]);
     setShowOrderForm(false);
   };
 
@@ -122,6 +227,7 @@ const Garcon = () => {
 
   const occupiedTables = tables.filter(t => t.status !== 'livre').length;
   const totalCustomers = tables.reduce((sum, table) => sum + (table.status !== 'livre' ? table.customers : 0), 0);
+  const availableTables = tables.filter(t => t.status === 'livre');
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -174,6 +280,7 @@ const Garcon = () => {
                 <Button 
                   onClick={() => setShowOrderForm(true)}
                   className="w-full bg-green-600 hover:bg-green-700"
+                  disabled={availableTables.length === 0}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Novo Pedido
@@ -261,7 +368,7 @@ const Garcon = () => {
         {/* Modal para novo pedido */}
         {showOrderForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <Card className="w-full max-w-md">
+            <Card className="w-full max-w-2xl max-h-[80vh] overflow-y-auto">
               <CardHeader>
                 <CardTitle>Novo Pedido</CardTitle>
               </CardHeader>
@@ -269,13 +376,18 @@ const Garcon = () => {
                 <form onSubmit={handleNewOrder} className="space-y-4">
                   <div>
                     <Label htmlFor="table">Mesa</Label>
-                    <Input
-                      id="table"
-                      value={newOrder.table}
-                      onChange={(e) => setNewOrder(prev => ({ ...prev, table: e.target.value }))}
-                      placeholder="Ex: Mesa 01"
-                      required
-                    />
+                    <Select value={newOrder.tableId} onValueChange={(value) => setNewOrder(prev => ({ ...prev, tableId: value }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma mesa" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableTables.map((table) => (
+                          <SelectItem key={table.id} value={table.id.toString()}>
+                            {table.number}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div>
@@ -285,20 +397,78 @@ const Garcon = () => {
                       type="number"
                       value={newOrder.customers}
                       onChange={(e) => setNewOrder(prev => ({ ...prev, customers: e.target.value }))}
+                      placeholder="Ex: 4"
                       required
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="items">Itens do Pedido</Label>
-                    <Textarea
-                      id="items"
-                      value={newOrder.items}
-                      onChange={(e) => setNewOrder(prev => ({ ...prev, items: e.target.value }))}
-                      placeholder="Ex: 2x Marmita Executiva, 1x Refrigerante"
-                      required
-                    />
+                    <Label>Adicionar Item</Label>
+                    <div className="flex gap-2">
+                      <Select value={selectedItemId} onValueChange={setSelectedItemId}>
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Selecione um item do cardápio" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {marmitas.map((item) => (
+                            <SelectItem key={item.id} value={item.id.toString()}>
+                              {item.name} - R$ {item.price.toFixed(2)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button type="button" onClick={addItemToOrder} disabled={!selectedItemId}>
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
+
+                  {orderItems.length > 0 && (
+                    <div>
+                      <Label>Itens do Pedido</Label>
+                      <div className="border rounded-lg p-3 space-y-2 max-h-40 overflow-y-auto">
+                        {orderItems.map((orderItem) => (
+                          <div key={orderItem.item.id} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                            <div className="flex-1">
+                              <p className="font-medium">{orderItem.item.name}</p>
+                              <p className="text-sm text-gray-600">R$ {orderItem.item.price.toFixed(2)} cada</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => updateItemQuantity(orderItem.item.id, orderItem.quantity - 1)}
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <span className="w-8 text-center">{orderItem.quantity}</span>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => updateItemQuantity(orderItem.item.id, orderItem.quantity + 1)}
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => removeItemFromOrder(orderItem.item.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="flex justify-between items-center pt-2 border-t">
+                          <span className="font-semibold">Total:</span>
+                          <span className="font-bold text-lg">R$ {calculateOrderTotal().toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   <div>
                     <Label htmlFor="notes">Observações</Label>
@@ -311,13 +481,17 @@ const Garcon = () => {
                   </div>
 
                   <div className="flex gap-2 pt-4">
-                    <Button type="submit" className="flex-1">
-                      Criar Pedido
+                    <Button type="submit" className="flex-1" disabled={orderItems.length === 0}>
+                      Enviar para Cozinha
                     </Button>
                     <Button 
                       type="button" 
                       variant="outline" 
-                      onClick={() => setShowOrderForm(false)} 
+                      onClick={() => {
+                        setShowOrderForm(false);
+                        setNewOrder({ tableId: '', customers: '', notes: '' });
+                        setOrderItems([]);
+                      }} 
                       className="flex-1"
                     >
                       Cancelar

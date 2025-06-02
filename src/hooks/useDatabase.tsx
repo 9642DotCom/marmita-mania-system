@@ -319,7 +319,7 @@ export const useDatabase = () => {
       // Primeiro buscar o pedido para verificar se é local e qual mesa
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
-        .select('table_id, order_type, status')
+        .select('table_id, order_type, status, notes')
         .eq('id', orderId)
         .single();
 

@@ -41,6 +41,11 @@ const AdminSidebar = ({ activeSection, onSectionChange }: AdminSidebarProps) => 
       label: 'Usuários',
       icon: Users,
     },
+    {
+      id: 'settings',
+      label: 'Configurações da Empresa',
+      icon: Settings,
+    },
   ];
 
   return (

@@ -28,6 +28,47 @@ export const useAuth = () => {
     });
   };
 
+  // Função para verificar e renovar token se necessário
+  const refreshTokenIfNeeded = async () => {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error('Erro ao verificar sessão:', error);
+        if (error.message.includes('expired') || error.message.includes('JWT')) {
+          console.log('Token expirado, fazendo logout...');
+          await signOut();
+        }
+        return false;
+      }
+      
+      if (!session) {
+        console.log('Nenhuma sessão válida encontrada');
+        return false;
+      }
+
+      // Verificar se o token vai expirar em menos de 5 minutos
+      const expiresAt = session.expires_at || 0;
+      const now = Math.floor(Date.now() / 1000);
+      const timeUntilExpiry = expiresAt - now;
+      
+      if (timeUntilExpiry < 300) { // Menos de 5 minutos
+        console.log('Token próximo do vencimento, renovando...');
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          console.error('Erro ao renovar token:', refreshError);
+          await signOut();
+          return false;
+        }
+        console.log('Token renovado com sucesso');
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Erro ao verificar/renovar token:', error);
+      return false;
+    }
+  };
+
   useEffect(() => {
     console.log('Inicializando useAuth...');
     
@@ -59,7 +100,13 @@ export const useAuth = () => {
       }
     );
 
-    return () => subscription.unsubscribe();
+    // Configurar verificação periódica do token (a cada 10 minutos)
+    const tokenCheckInterval = setInterval(refreshTokenIfNeeded, 10 * 60 * 1000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearInterval(tokenCheckInterval);
+    };
   }, []);
 
   const loadProfile = async (userId: string) => {
@@ -219,5 +266,6 @@ export const useAuth = () => {
     loading,
     signOut,
     redirectBasedOnRole,
+    refreshTokenIfNeeded,
   };
 };

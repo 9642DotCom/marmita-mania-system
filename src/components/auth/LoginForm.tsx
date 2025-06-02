@@ -31,13 +31,51 @@ const LoginForm = () => {
 
       if (error) throw error;
 
+      console.log('Login realizado com sucesso:', data);
+
       toast({
         title: "Login realizado com sucesso!",
         description: "Bem-vindo de volta!",
       });
 
-      // O redirecionamento será feito pelo useAuth hook baseado no role
+      // Verificar o perfil do usuário para redirecionar
+      if (data.user) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Erro ao buscar perfil:', profileError);
+          navigate('/');
+        } else if (profileData) {
+          console.log('Perfil encontrado:', profileData);
+          // Redirecionar baseado no role
+          switch (profileData.role) {
+            case 'admin':
+              navigate('/admin');
+              break;
+            case 'entregador':
+              navigate('/entregador');
+              break;
+            case 'caixa':
+              navigate('/caixa');
+              break;
+            case 'cozinha':
+              navigate('/cozinha');
+              break;
+            case 'garcon':
+              navigate('/garcon');
+              break;
+            default:
+              navigate('/');
+              break;
+          }
+        }
+      }
     } catch (error: any) {
+      console.error('Erro no login:', error);
       toast({
         title: "Erro no login",
         description: error.message,
@@ -95,7 +133,7 @@ const LoginForm = () => {
 
         // 5. Criar perfil do usuário vinculado à empresa
         const { error: profileError } = await supabase
-          .from('profiles' as any)
+          .from('profiles')
           .insert([
             {
               id: authData.user.id,

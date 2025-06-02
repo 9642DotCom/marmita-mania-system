@@ -41,26 +41,33 @@ export const useAuth = () => {
   const loadProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('profiles' as any)
+        .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
-      if (error) throw error;
-      setProfile(data as Profile);
-      
-      // Redirecionar baseado no role do usuário
-      if (data) {
-        redirectBasedOnRole(data.role);
+      if (error) {
+        console.error('Erro ao carregar perfil:', error);
+        setProfile(null);
+      } else {
+        setProfile(data as Profile);
+        
+        // Redirecionar baseado no role do usuário
+        if (data) {
+          redirectBasedOnRole(data.role);
+        }
       }
     } catch (error) {
       console.error('Erro ao carregar perfil:', error);
+      setProfile(null);
     } finally {
       setLoading(false);
     }
   };
 
   const redirectBasedOnRole = (role: string) => {
+    console.log('Redirecionando usuário com role:', role);
+    
     // Só redireciona se estiver na página de auth
     if (window.location.pathname === '/auth') {
       switch (role) {
@@ -87,8 +94,18 @@ export const useAuth = () => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    navigate('/auth');
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setProfile(null);
+      navigate('/auth');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      // Mesmo com erro, limpar o estado e redirecionar
+      setUser(null);
+      setProfile(null);
+      navigate('/auth');
+    }
   };
 
   return {

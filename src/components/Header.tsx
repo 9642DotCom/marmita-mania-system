@@ -7,9 +7,11 @@ import { useAuth } from '@/hooks/useAuth';
 interface HeaderProps {
   cartItemCount: number;
   onCartClick: () => void;
+  restaurantName?: string;
+  restaurantSlogan?: string;
 }
 
-const Header = ({ cartItemCount, onCartClick }: HeaderProps) => {
+const Header = ({ cartItemCount, onCartClick, restaurantName, restaurantSlogan }: HeaderProps) => {
   const { user, signOut } = useAuth();
 
   return (
@@ -21,8 +23,8 @@ const Header = ({ cartItemCount, onCartClick }: HeaderProps) => {
               <Utensils className="h-8 w-8" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">Marmita Mania</h1>
-              <p className="text-orange-100 text-sm">Sabor caseiro na sua mesa</p>
+              <h1 className="text-2xl font-bold">{restaurantName || 'Marmita Mania'}</h1>
+              <p className="text-orange-100 text-sm">{restaurantSlogan || 'Sabor caseiro na sua mesa'}</p>
             </div>
           </div>
           

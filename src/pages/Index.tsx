@@ -68,7 +68,9 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
       <Header 
         cartItemCount={getTotalItems()} 
-        onCartClick={() => setIsCartOpen(true)} 
+        onCartClick={() => setIsCartOpen(true)}
+        restaurantName={restaurantName}
+        restaurantSlogan={restaurantSlogan}
       />
       
       {/* Hero Section */}

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -277,9 +276,9 @@ const Garcon = () => {
     }
   };
 
-  const availableTables = tables.filter(t => t.status === 'available');
-  const occupiedTables = tables.filter(t => t.status === 'occupied');
-  const waitingPaymentTables = tables.filter(t => t.status === 'waiting_payment');
+  const availableTables = tables.filter(t => (t.status || 'available') === 'available');
+  const occupiedTables = tables.filter(t => (t.status || 'available') === 'occupied');
+  const waitingPaymentTables = tables.filter(t => (t.status || 'available') === 'waiting_payment');
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -400,9 +399,9 @@ const Garcon = () => {
                         setNewOrder(prev => ({ ...prev, tableId: table.id, order_type: 'local' }));
                         setShowOrderForm(true);
                       }}
-                      disabled={table.status === 'occupied'}
+                      disabled={(table.status || 'available') === 'occupied'}
                     >
-                      {table.status === 'occupied' ? 'Mesa Ocupada' : 'Fazer Pedido'}
+                      {(table.status || 'available') === 'occupied' ? 'Mesa Ocupada' : 'Fazer Pedido'}
                     </Button>
                   </div>
                 </div>

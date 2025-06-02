@@ -50,6 +50,7 @@ export interface Table {
   number: number;
   capacity: number;
   available: boolean;
+  status?: 'available' | 'occupied' | 'waiting_payment';
   created_at: string;
   updated_at: string;
 }
@@ -65,6 +66,7 @@ export interface Order {
   status: 'pendente' | 'preparando' | 'saiu_entrega' | 'entregue' | 'cancelado';
   total_amount: number;
   notes?: string;
+  order_type?: 'local' | 'delivery';
   created_at: string;
   updated_at: string;
   tables?: Table;

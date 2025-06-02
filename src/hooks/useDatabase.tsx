@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -279,7 +280,13 @@ export const useDatabase = () => {
             *,
             tables (
               id,
-              number
+              number,
+              capacity,
+              available,
+              status,
+              company_id,
+              created_at,
+              updated_at
             )
           `)
           .eq('company_id', profile.company_id)

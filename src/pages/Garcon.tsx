@@ -358,14 +358,30 @@ const Garcon = () => {
   const occupiedTables = tables.filter(t => (t.status || 'available') === 'occupied');
   const waitingPaymentTables = tables.filter(t => (t.status || 'available') === 'waiting_payment');
 
-  // Get orders ready for delivery
-  const readyOrders = orders.filter(order => 
-    order.status === 'preparando' && order.order_type === 'local'
-  );
+  // Corrigindo os filtros de pedidos prontos para entrega
+  const readyOrders = orders.filter(order => {
+    console.log('🔍 Verificando pedido:', {
+      id: order.id.slice(0, 8),
+      status: order.status,
+      order_type: order.order_type,
+      table_id: order.table_id
+    });
+    
+    return order.status === 'preparando' && order.order_type === 'local';
+  });
 
   const deliveryOrders = orders.filter(order => 
     order.status === 'saiu_entrega' && order.order_type === 'delivery'
   );
+
+  console.log('📊 Estados dos pedidos:');
+  console.log('🍽️ Pedidos locais prontos (preparando):', readyOrders.length);
+  console.log('🏍️ Pedidos delivery em rota (saiu_entrega):', deliveryOrders.length);
+  console.log('📋 Todos os pedidos:', orders.map(o => ({ 
+    id: o.id.slice(0, 8), 
+    status: o.status, 
+    type: o.order_type 
+  })));
 
   const handleDeliverOrder = async (order: any) => {
     try {
@@ -483,6 +499,143 @@ const Garcon = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Pedidos Prontos para Entrega - SEMPRE exibir quando há pedidos ou para debug */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5 text-green-600" />
+              Pedidos Prontos para Entrega ({readyOrders.length + deliveryOrders.length})
+              <span className="text-sm text-gray-500">
+                - Debug: {orders.length} pedidos totais
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {readyOrders.length === 0 && deliveryOrders.length === 0 ? (
+              <div className="text-center py-8">
+                <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500 text-lg font-medium">Nenhum pedido pronto para entrega</p>
+                <p className="text-gray-400 text-sm mt-2">
+                  Pedidos aparecerão aqui quando estiverem prontos na cozinha
+                </p>
+                <div className="mt-4 p-3 bg-gray-50 rounded text-xs text-left">
+                  <p className="font-medium mb-2">Status dos pedidos existentes:</p>
+                  {orders.length === 0 ? (
+                    <p>Nenhum pedido encontrado</p>
+                  ) : (
+                    orders.map(order => (
+                      <div key={order.id} className="mb-1">
+                        #{order.id.slice(0, 8)} - {order.status} - {order.order_type}
+                        {order.order_type === 'local' && order.tables ? ` - Mesa ${order.tables.number}` : ''}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Pedidos Locais Prontos */}
+                {readyOrders.map((order) => (
+                  <div key={order.id} className="border-2 border-green-300 bg-green-50 rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="font-semibold text-lg">Mesa {order.tables?.number}</h3>
+                        <p className="text-sm text-gray-600">
+                          Pedido #{order.id.slice(0, 8)}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Cliente: {order.customer_name || 'Não informado'}
+                        </p>
+                      </div>
+                      <Badge className="bg-green-500 text-white">
+                        Pronto
+                      </Badge>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <p className="text-sm font-medium text-gray-700">
+                        Total: R$ {order.total_amount.toFixed(2)}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Pedido feito: {new Date(order.created_at).toLocaleTimeString('pt-BR', { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
+                      </p>
+                      {order.notes && (
+                        <p className="text-xs text-gray-600 mt-1">
+                          Obs: {order.notes}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <Button 
+                      onClick={() => handleDeliverOrder(order)}
+                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                      size="sm"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Entregar na Mesa
+                    </Button>
+                  </div>
+                ))}
+
+                {/* Pedidos de Delivery em Rota */}
+                {deliveryOrders.map((order) => (
+                  <div key={order.id} className="border-2 border-blue-300 bg-blue-50 rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="font-semibold text-lg flex items-center gap-2">
+                          <Truck className="h-4 w-4" />
+                          Delivery
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          Pedido #{order.id.slice(0, 8)}
+                        </p>
+                        <p className="text-sm font-medium text-gray-700">
+                          {order.customer_name}
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          {order.customer_phone}
+                        </p>
+                      </div>
+                      <Badge className="bg-blue-500 text-white">
+                        Em Rota
+                      </Badge>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <p className="text-sm text-gray-600 mb-1">
+                        <strong>Endereço:</strong>
+                      </p>
+                      <p className="text-xs text-gray-700 bg-white p-2 rounded border">
+                        {order.customer_address}
+                      </p>
+                      <p className="text-sm font-medium text-gray-700 mt-2">
+                        Total: R$ {order.total_amount.toFixed(2)}
+                      </p>
+                      {order.notes && (
+                        <p className="text-xs text-gray-600 mt-1">
+                          Obs: {order.notes}
+                        </p>
+                      )}
+                    </div>
+                    
+                    <Button 
+                      onClick={() => handleDeliverOrder(order)}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                      size="sm"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Confirmar Entrega
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Card className="mb-6">
           <CardHeader>
@@ -848,119 +1001,6 @@ const Garcon = () => {
               </CardContent>
             </Card>
           </div>
-        )}
-
-        {/* Pedidos Prontos para Entrega */}
-        {(readyOrders.length > 0 || deliveryOrders.length > 0) && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5 text-green-600" />
-                Pedidos Prontos para Entrega ({readyOrders.length + deliveryOrders.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Pedidos Locais Prontos */}
-                {readyOrders.map((order) => (
-                  <div key={order.id} className="border-2 border-green-300 bg-green-50 rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h3 className="font-semibold text-lg">Mesa {order.tables?.number}</h3>
-                        <p className="text-sm text-gray-600">
-                          Pedido #{order.id.slice(0, 8)}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Cliente: {order.customer_name || 'Não informado'}
-                        </p>
-                      </div>
-                      <Badge className="bg-green-500 text-white">
-                        Pronto
-                      </Badge>
-                    </div>
-                    
-                    <div className="mb-3">
-                      <p className="text-sm font-medium text-gray-700">
-                        Total: R$ {order.total_amount.toFixed(2)}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Pedido feito: {new Date(order.created_at).toLocaleTimeString('pt-BR', { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
-                        })}
-                      </p>
-                      {order.notes && (
-                        <p className="text-xs text-gray-600 mt-1">
-                          Obs: {order.notes}
-                        </p>
-                      )}
-                    </div>
-                    
-                    <Button 
-                      onClick={() => handleDeliverOrder(order)}
-                      className="w-full bg-green-600 hover:bg-green-700 text-white"
-                      size="sm"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Entregar na Mesa
-                    </Button>
-                  </div>
-                ))}
-
-                {/* Pedidos de Delivery em Rota */}
-                {deliveryOrders.map((order) => (
-                  <div key={order.id} className="border-2 border-blue-300 bg-blue-50 rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h3 className="font-semibold text-lg flex items-center gap-2">
-                          <Truck className="h-4 w-4" />
-                          Delivery
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          Pedido #{order.id.slice(0, 8)}
-                        </p>
-                        <p className="text-sm font-medium text-gray-700">
-                          {order.customer_name}
-                        </p>
-                        <p className="text-xs text-gray-600">
-                          {order.customer_phone}
-                        </p>
-                      </div>
-                      <Badge className="bg-blue-500 text-white">
-                        Em Rota
-                      </Badge>
-                    </div>
-                    
-                    <div className="mb-3">
-                      <p className="text-sm text-gray-600 mb-1">
-                        <strong>Endereço:</strong>
-                      </p>
-                      <p className="text-xs text-gray-700 bg-white p-2 rounded border">
-                        {order.customer_address}
-                      </p>
-                      <p className="text-sm font-medium text-gray-700 mt-2">
-                        Total: R$ {order.total_amount.toFixed(2)}
-                      </p>
-                      {order.notes && (
-                        <p className="text-xs text-gray-600 mt-1">
-                          Obs: {order.notes}
-                        </p>
-                      )}
-                    </div>
-                    
-                    <Button 
-                      onClick={() => handleDeliverOrder(order)}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                      size="sm"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Confirmar Entrega
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
         )}
       </div>
     </div>

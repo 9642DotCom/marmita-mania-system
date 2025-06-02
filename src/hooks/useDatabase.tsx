@@ -263,7 +263,20 @@ export const useDatabase = () => {
         throw orderError;
       }
 
-      // Lógica de atualização do status da mesa baseada no status do pedido
+      // Atualizar o status do pedido PRIMEIRO
+      const { data, error } = await supabase
+        .from('orders')
+        .update({ status })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating order status:', error);
+        throw error;
+      }
+
+      // DEPOIS atualizar o status da mesa baseado no status do pedido
       if (orderData.order_type === 'local' && orderData.table_id) {
         if (status === 'entregue') {
           // Quando garçom entrega na mesa, cliente está comendo
@@ -290,19 +303,6 @@ export const useDatabase = () => {
           }
           console.log(`Mesa ${orderData.table_id} liberada após cancelamento`);
         }
-      }
-
-      // Atualizar o status do pedido
-      const { data, error } = await supabase
-        .from('orders')
-        .update({ status })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error updating order status:', error);
-        throw error;
       }
       
       console.log(`Order ${id} updated to ${status}`);

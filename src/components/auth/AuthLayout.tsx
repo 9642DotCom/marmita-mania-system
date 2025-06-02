@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import RestaurantAuth from '@/pages/RestaurantAuth';
 
 interface AuthLayoutProps {
@@ -13,6 +13,7 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Verificar usuário atual
@@ -28,11 +29,28 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
         console.log('AuthLayout - Auth state changed:', event, session?.user?.id);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Se o usuário fez login e está na página de auth, redirecionar
+        if (event === 'SIGNED_IN' && session?.user && location.pathname === '/auth') {
+          console.log('Usuário logou, redirecionando...');
+          
+          // Detectar role baseado no email
+          const email = session.user.email || '';
+          const isAdmin = email.includes('admin') || email.includes('rodrigo') || email === 'rodrigo_nunes.182@hotmail.com';
+          
+          setTimeout(() => {
+            if (isAdmin) {
+              navigate('/admin', { replace: true });
+            } else {
+              navigate('/garcon', { replace: true });
+            }
+          }, 500);
+        }
       }
     );
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [location.pathname, navigate]);
 
   if (loading) {
     return (

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Building2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
 const RestaurantAuth = () => {
   const [email, setEmail] = useState('');
@@ -20,12 +21,15 @@ const RestaurantAuth = () => {
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const navigate = useNavigate();
+  const { profile } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      console.log('Iniciando login...');
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -33,13 +37,47 @@ const RestaurantAuth = () => {
 
       if (error) throw error;
 
+      console.log('Login realizado com sucesso:', data);
+
       toast({
         title: "Login realizado com sucesso!",
-        description: "Bem-vindo de volta!",
+        description: "Redirecionando...",
       });
 
-      // O redirecionamento será feito pelo useAuth hook baseado no role
+      // Aguardar um pouco para o perfil ser carregado
+      setTimeout(() => {
+        console.log('Redirecionando baseado no perfil...');
+        
+        // Detectar role baseado no email se não tiver perfil ainda
+        const isAdmin = email.includes('admin') || email.includes('rodrigo') || email === 'rodrigo_nunes.182@hotmail.com';
+        const role = profile?.role || (isAdmin ? 'admin' : 'garcon');
+        
+        console.log('Role detectado:', role);
+        
+        switch (role) {
+          case 'admin':
+            navigate('/admin', { replace: true });
+            break;
+          case 'entregador':
+            navigate('/entregador', { replace: true });
+            break;
+          case 'caixa':
+            navigate('/caixa', { replace: true });
+            break;
+          case 'cozinha':
+            navigate('/cozinha', { replace: true });
+            break;
+          case 'garcon':
+            navigate('/garcon', { replace: true });
+            break;
+          default:
+            navigate('/', { replace: true });
+            break;
+        }
+      }, 1000);
+
     } catch (error: any) {
+      console.error('Erro no login:', error);
       toast({
         title: "Erro no login",
         description: error.message,
@@ -273,6 +311,91 @@ const RestaurantAuth = () => {
       </Card>
     </div>
   );
+};
+
+const handleSignUp = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+
+  try {
+    // 1. Criar usuário primeiro
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name: ownerName,
+          restaurant_name: restaurantName,
+        }
+      }
+    });
+
+    if (authError) throw authError;
+
+    if (authData.user) {
+      // 2. Aguardar um pouco para garantir que o usuário foi criado
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // 3. Fazer login temporário para ter acesso autenticado
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) throw signInError;
+
+      // 4. Criar empresa (agora com usuário autenticado)
+      const { data: companyData, error: companyError } = await supabase
+        .from('companies')
+        .insert([
+          {
+            name: restaurantName,
+            email: email,
+            phone: phone || null,
+            address: address || null,
+            owner_id: authData.user.id,
+          }
+        ])
+        .select()
+        .single();
+
+      if (companyError) throw companyError;
+
+      // 5. Criar perfil do usuário vinculado à empresa
+      const { error: profileError } = await supabase
+        .from('profiles' as any)
+        .insert([
+          {
+            id: authData.user.id,
+            company_id: companyData.id,
+            name: ownerName,
+            email: email,
+            role: 'admin',
+          }
+        ]);
+
+      if (profileError) throw profileError;
+
+      toast({
+        title: "Restaurante cadastrado com sucesso!",
+        description: "Sua conta foi criada. Redirecionando para o painel admin...",
+      });
+
+      // Redirecionar para admin após cadastro bem-sucedido
+      setTimeout(() => {
+        navigate('/admin', { replace: true });
+      }, 1000);
+    }
+  } catch (error: any) {
+    console.error('Erro detalhado:', error);
+    toast({
+      title: "Erro ao criar conta",
+      description: error.message,
+      variant: "destructive",
+    });
+  } finally {
+    setLoading(false);
+  }
 };
 
 export default RestaurantAuth;

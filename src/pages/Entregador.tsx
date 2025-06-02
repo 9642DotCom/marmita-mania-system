@@ -1,9 +1,9 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MapPin, Clock, Package, CheckCircle } from 'lucide-react';
+import PageHeader from '@/components/PageHeader';
 
 const Entregador = () => {
   const [deliveries, setDeliveries] = useState([
@@ -63,8 +63,13 @@ const Entregador = () => {
   const completedDeliveries = deliveries.filter(d => d.status === 'entregue');
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gray-50">
+      <PageHeader 
+        title="Sistema do Entregador" 
+        subtitle="Gerencie suas entregas" 
+      />
+      
+      <div className="max-w-6xl mx-auto p-6">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Sistema do Entregador</h1>
           <p className="text-gray-600">Gerencie suas entregas</p>

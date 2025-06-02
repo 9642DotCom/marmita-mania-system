@@ -3,9 +3,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import LoginForm from "@/components/auth/LoginForm";
+import Auth from "./pages/Auth";
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import Caixa from "./pages/Caixa";
@@ -15,22 +15,6 @@ import Garcon from "./pages/Garcon";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
-
-const AuthenticatedApp = () => {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/caixa" element={<Caixa />} />
-        <Route path="/entregador" element={<Entregador />} />
-        <Route path="/cozinha" element={<Cozinha />} />
-        <Route path="/garcon" element={<Garcon />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
-  );
-};
 
 const App = () => {
   const { user, loading } = useAuth();
@@ -48,7 +32,23 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        {user ? <AuthenticatedApp /> : <LoginForm />}
+        <BrowserRouter>
+          <Routes>
+            {/* Rota de autenticação */}
+            <Route path="/auth" element={!user ? <Auth /> : <Navigate to="/" replace />} />
+            
+            {/* Rotas protegidas */}
+            <Route path="/" element={user ? <Index /> : <Navigate to="/auth" replace />} />
+            <Route path="/admin" element={user ? <Admin /> : <Navigate to="/auth" replace />} />
+            <Route path="/caixa" element={user ? <Caixa /> : <Navigate to="/auth" replace />} />
+            <Route path="/entregador" element={user ? <Entregador /> : <Navigate to="/auth" replace />} />
+            <Route path="/cozinha" element={user ? <Cozinha /> : <Navigate to="/auth" replace />} />
+            <Route path="/garcon" element={user ? <Garcon /> : <Navigate to="/auth" replace />} />
+            
+            {/* Página não encontrada */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
   );

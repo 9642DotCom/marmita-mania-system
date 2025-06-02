@@ -1,76 +1,77 @@
 
-import { Package, Tag, ShoppingBag, Users } from 'lucide-react';
+import { BarChart3, Package, Tags, ShoppingCart, Users, Settings } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarHeader,
 } from '@/components/ui/sidebar';
-import { AdminSection } from '@/pages/Admin';
 
 interface AdminSidebarProps {
-  activeSection: AdminSection;
-  onSectionChange: (section: AdminSection) => void;
+  activeSection: string;
+  onSectionChange: (section: any) => void;
 }
 
-const menuItems = [
-  {
-    id: 'orders' as AdminSection,
-    title: 'Pedidos',
-    icon: ShoppingBag,
-  },
-  {
-    id: 'products' as AdminSection,
-    title: 'Produtos',
-    icon: Package,
-  },
-  {
-    id: 'categories' as AdminSection,
-    title: 'Categorias',
-    icon: Tag,
-  },
-  {
-    id: 'users' as AdminSection,
-    title: 'Usuários',
-    icon: Users,
-  },
-];
-
 const AdminSidebar = ({ activeSection, onSectionChange }: AdminSidebarProps) => {
+  const menuItems = [
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: BarChart3,
+    },
+    {
+      id: 'orders',
+      label: 'Pedidos',
+      icon: ShoppingCart,
+    },
+    {
+      id: 'products',
+      label: 'Produtos',
+      icon: Package,
+    },
+    {
+      id: 'categories',
+      label: 'Categorias',
+      icon: Tags,
+    },
+    {
+      id: 'users',
+      label: 'Usuários',
+      icon: Users,
+    },
+  ];
+
   return (
-    <Sidebar className="border-r">
-      <SidebarHeader className="border-b p-4">
-        <div className="flex items-center gap-2">
-          <Users className="h-6 w-6 text-orange-600" />
-          <h2 className="text-lg font-bold text-gray-900">Admin Panel</h2>
-        </div>
+    <Sidebar>
+      <SidebarHeader className="p-6 border-b">
+        <h2 className="text-xl font-bold text-gray-900">Admin Panel</h2>
+        <p className="text-sm text-gray-600">Sistema de Gerenciamento</p>
       </SidebarHeader>
-      
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Gerenciamento</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton
-                    onClick={() => onSectionChange(item.id)}
-                    isActive={activeSection === item.id}
-                    className="w-full justify-start"
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <SidebarMenu className="p-4 space-y-2">
+          {menuItems.map((item) => {
+            const IconComponent = item.icon;
+            const isActive = activeSection === item.id;
+            
+            return (
+              <SidebarMenuItem key={item.id}>
+                <SidebarMenuButton
+                  onClick={() => onSectionChange(item.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                    isActive
+                      ? 'bg-orange-100 text-orange-700 border border-orange-200'
+                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                  }`}
+                >
+                  <IconComponent className={`h-5 w-5 ${isActive ? 'text-orange-600' : 'text-gray-500'}`} />
+                  <span className="font-medium">{item.label}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          })}
+        </SidebarMenu>
       </SidebarContent>
     </Sidebar>
   );

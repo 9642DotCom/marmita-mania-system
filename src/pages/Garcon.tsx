@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Users, Clock, Plus, Utensils, Trash2, Minus, LogOut, Truck, UtensilsCrossed } from 'lucide-react';
+import { Users, Clock, Plus, Utensils, Trash2, Minus, LogOut, Truck, UtensilsCrossed, Edit, X, Receipt, ShoppingCart } from 'lucide-react';
 import { useDatabase } from '@/hooks/useDatabase';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -21,10 +21,11 @@ interface OrderItem {
 }
 
 const Garcon = () => {
-  const { useProducts, useTables, createOrder, createOrderItems, createTable } = useDatabase();
+  const { useProducts, useTables, useOrders, createOrder, createOrderItems, createTable, updateOrderStatus } = useDatabase();
   const { profile, signOut, loading } = useAuth();
   const { data: products = [], isLoading: productsLoading } = useProducts();
   const { data: tables = [], isLoading: tablesLoading } = useTables();
+  const { data: orders = [], isLoading: ordersLoading } = useOrders();
 
   const [newOrder, setNewOrder] = useState({
     tableId: '',
@@ -41,6 +42,8 @@ const Garcon = () => {
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [showAddTableForm, setShowAddTableForm] = useState(false);
   const [newTableNumber, setNewTableNumber] = useState('');
+  const [showTableOptionsModal, setShowTableOptionsModal] = useState(false);
+  const [selectedTableForOptions, setSelectedTableForOptions] = useState<any>(null);
 
   // Loading state while profile is being loaded
   if (loading) {
@@ -250,6 +253,81 @@ const Garcon = () => {
     }
   };
 
+  const getActiveOrderForTable = (tableId: string) => {
+    return orders.find(order => 
+      order.table_id === tableId && 
+      order.status !== 'cancelado' && 
+      order.status !== 'entregue'
+    );
+  };
+
+  const handleEditOrder = (table: any) => {
+    const activeOrder = getActiveOrderForTable(table.id);
+    if (activeOrder) {
+      setNewOrder(prev => ({ 
+        ...prev, 
+        tableId: table.id, 
+        order_type: 'local',
+        customer_name: activeOrder.customer_name || '',
+        notes: activeOrder.notes || ''
+      }));
+      setShowOrderForm(true);
+      setShowTableOptionsModal(false);
+    }
+  };
+
+  const handleAddItemsToOrder = (table: any) => {
+    setNewOrder(prev => ({ 
+      ...prev, 
+      tableId: table.id, 
+      order_type: 'local'
+    }));
+    setOrderItems([]);
+    setShowOrderForm(true);
+    setShowTableOptionsModal(false);
+  };
+
+  const handleCancelOrder = async (table: any) => {
+    const activeOrder = getActiveOrderForTable(table.id);
+    if (activeOrder) {
+      try {
+        await updateOrderStatus.mutateAsync({
+          id: activeOrder.id,
+          status: 'cancelado'
+        });
+        setShowTableOptionsModal(false);
+        toast({
+          title: "Pedido cancelado!",
+          description: `O pedido da Mesa ${table.number} foi cancelado.`,
+        });
+      } catch (error: any) {
+        toast({
+          title: "Erro ao cancelar pedido",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  const handleRequestBill = async (table: any) => {
+    const activeOrder = getActiveOrderForTable(table.id);
+    if (activeOrder && activeOrder.status === 'entregue') {
+      // Se o pedido já foi entregue, podemos solicitar a conta
+      toast({
+        title: "Conta solicitada! 💰",
+        description: `A conta da Mesa ${table.number} foi solicitada. Total: R$ ${activeOrder.total_amount.toFixed(2)}`,
+      });
+      setShowTableOptionsModal(false);
+    } else {
+      toast({
+        title: "Aguarde a entrega",
+        description: "A conta só pode ser solicitada após a entrega do pedido.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'available':
@@ -392,23 +470,94 @@ const Garcon = () => {
                   
                   <div className="text-center py-4">
                     <p className="text-gray-500 mb-3">Capacidade: {table.capacity} pessoas</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        setNewOrder(prev => ({ ...prev, tableId: table.id, order_type: 'local' }));
-                        setShowOrderForm(true);
-                      }}
-                      disabled={(table.status || 'available') === 'occupied'}
-                    >
-                      {(table.status || 'available') === 'occupied' ? 'Mesa Ocupada' : 'Fazer Pedido'}
-                    </Button>
+                    
+                    {(table.status || 'available') === 'available' ? (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setNewOrder(prev => ({ ...prev, tableId: table.id, order_type: 'local' }));
+                          setShowOrderForm(true);
+                        }}
+                      >
+                        Fazer Pedido
+                      </Button>
+                    ) : (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setSelectedTableForOptions(table);
+                          setShowTableOptionsModal(true);
+                        }}
+                        className="w-full"
+                      >
+                        Gerenciar Mesa
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
+
+        {/* Modal para opções da mesa ocupada */}
+        {showTableOptionsModal && selectedTableForOptions && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-md">
+              <CardHeader>
+                <CardTitle>Mesa {selectedTableForOptions.number} - Opções</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <Button 
+                    onClick={() => handleEditOrder(selectedTableForOptions)}
+                    className="w-full justify-start"
+                    variant="outline"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Editar Pedido
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => handleAddItemsToOrder(selectedTableForOptions)}
+                    className="w-full justify-start"
+                    variant="outline"
+                  >
+                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    Incluir Mais Itens
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => handleRequestBill(selectedTableForOptions)}
+                    className="w-full justify-start bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Receipt className="h-4 w-4 mr-2" />
+                    Pedir a Conta
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => handleCancelOrder(selectedTableForOptions)}
+                    className="w-full justify-start"
+                    variant="destructive"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Cancelar Pedido
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => setShowTableOptionsModal(false)}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Fechar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Modal para novo pedido */}
         {showOrderForm && (

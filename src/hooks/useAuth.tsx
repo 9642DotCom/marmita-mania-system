@@ -65,6 +65,8 @@ export const useAuth = () => {
   const loadProfile = async (userId: string) => {
     try {
       console.log('Carregando perfil para usuário:', userId);
+      
+      // Tentar carregar o perfil do banco de dados
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -74,14 +76,14 @@ export const useAuth = () => {
       if (error) {
         console.error('Erro ao carregar perfil:', error);
         
-        // Se há erro de recursão ou não encontrou perfil, criar um perfil padrão admin
-        console.log('Criando perfil admin padrão devido ao erro...');
+        // Em caso de erro (incluindo recursão infinita), criar perfil padrão
+        console.log('Criando perfil padrão devido ao erro...');
         const defaultProfile = { 
           id: userId, 
-          role: 'admin',
-          name: 'Admin',
+          role: 'garcon',
+          name: 'Garçom',
           email: '',
-          company_id: null
+          company_id: 'default-company-id' // ID padrão temporário
         } as Profile;
         
         setProfile(defaultProfile);
@@ -91,54 +93,62 @@ export const useAuth = () => {
         console.log('Caminho atual após erro:', currentPath);
         
         if (currentPath === '/auth') {
-          console.log('Redirecionando admin para /admin após erro de perfil');
+          console.log('Redirecionando garçom para /garcon após erro');
           setTimeout(() => {
-            navigate('/admin', { replace: true });
+            navigate('/garcon', { replace: true });
           }, 100);
         }
       } else if (data) {
         console.log('Perfil carregado com sucesso:', data);
-        setProfile(data as Profile);
+        
+        // Se o perfil não tem company_id, definir um padrão
+        const profileWithCompany = {
+          ...data,
+          company_id: data.company_id || 'default-company-id'
+        } as Profile;
+        
+        setProfile(profileWithCompany);
         
         // Só redirecionar se estamos na página de auth
         const currentPath = window.location.pathname;
         console.log('Caminho atual:', currentPath);
         
         if (currentPath === '/auth') {
-          console.log('Iniciando redirecionamento para role:', data.role);
+          console.log('Iniciando redirecionamento para role:', profileWithCompany.role);
           setTimeout(() => {
-            redirectBasedOnRole(data.role);
+            redirectBasedOnRole(profileWithCompany.role);
           }, 100);
         }
       } else {
-        console.log('Nenhum perfil encontrado, criando perfil admin padrão...');
+        console.log('Nenhum perfil encontrado, criando perfil garçom padrão...');
         const defaultProfile = { 
           id: userId, 
-          role: 'admin',
-          name: 'Admin',
+          role: 'garcon',
+          name: 'Garçom',
           email: '',
-          company_id: null
+          company_id: 'default-company-id'
         } as Profile;
         
         setProfile(defaultProfile);
         
         const currentPath = window.location.pathname;
         if (currentPath === '/auth') {
-          console.log('Redirecionando para admin (sem perfil encontrado)');
+          console.log('Redirecionando para garcon (sem perfil encontrado)');
           setTimeout(() => {
-            navigate('/admin', { replace: true });
+            navigate('/garcon', { replace: true });
           }, 100);
         }
       }
     } catch (error) {
       console.error('Erro crítico ao carregar perfil:', error);
-      // Em caso de erro crítico, assumir admin sem redirecionar automaticamente
+      
+      // Em caso de erro crítico, criar perfil padrão
       const defaultProfile = { 
         id: userId, 
-        role: 'admin',
-        name: 'Admin',
+        role: 'garcon',
+        name: 'Garçom',
         email: '',
-        company_id: null
+        company_id: 'default-company-id'
       } as Profile;
       
       setProfile(defaultProfile);

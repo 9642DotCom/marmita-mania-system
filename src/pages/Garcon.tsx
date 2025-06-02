@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Users, Clock, Plus, Utensils, Trash2, Minus, LogOut } from 'lucide-react';
-import { useDatabase } from '@/hooks/useDatabase';
+import { useFallbackDatabase } from '@/hooks/useFallbackDatabase';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 
@@ -20,7 +20,7 @@ interface OrderItem {
 }
 
 const Garcon = () => {
-  const { useProducts, useTables, createOrder, createOrderItems, createTable } = useDatabase();
+  const { useProducts, useTables, createOrder, createOrderItems, createTable } = useFallbackDatabase();
   const { profile, signOut, loading } = useAuth();
   const { data: products = [], isLoading: productsLoading } = useProducts();
   const { data: tables = [], isLoading: tablesLoading } = useTables();
@@ -220,10 +220,8 @@ const Garcon = () => {
         <div className="mb-6 flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Sistema do Garçom</h1>
-            <p className="text-gray-600">Olá, {profile?.name}! Gerencie mesas e atendimento</p>
-            {profile?.company_id && (
-              <p className="text-sm text-gray-500">Empresa ID: {profile.company_id}</p>
-            )}
+            <p className="text-gray-600">Olá, {profile?.name || 'Garçom'}! Gerencie mesas e atendimento</p>
+            <p className="text-sm text-gray-500">Sistema funcionando em modo simplificado</p>
           </div>
           <Button 
             onClick={signOut}
@@ -238,7 +236,7 @@ const Garcon = () => {
         {/* Show loading state for data */}
         {(productsLoading || tablesLoading) && (
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-blue-700">Carregando dados da empresa...</p>
+            <p className="text-blue-700">Carregando dados...</p>
           </div>
         )}
 

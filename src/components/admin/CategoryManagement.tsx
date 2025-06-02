@@ -4,20 +4,12 @@ import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useDatabase } from '@/hooks/useDatabase';
 import CategoryForm from './CategoryForm';
 
-const initialCategories = [
-  { id: 1, name: 'Executiva', description: 'Marmitas executivas para o dia a dia' },
-  { id: 2, name: 'Fitness', description: 'Opções saudáveis e nutritivas' },
-  { id: 3, name: 'Caseira', description: 'Sabor tradicional da casa da vovó' },
-  { id: 4, name: 'Vegana', description: 'Opções 100% vegetais' },
-  { id: 5, name: 'Gourmet', description: 'Experiência gastronômica especial' },
-  { id: 6, name: 'Regional', description: 'Sabores típicos do Brasil' },
-  { id: 7, name: 'Infantil', description: 'Especialmente feito para crianças' },
-];
-
 const CategoryManagement = () => {
-  const [categories, setCategories] = useState(initialCategories);
+  const { useCategories, deleteCategory } = useDatabase();
+  const { data: categories = [], isLoading } = useCategories();
   const [showForm, setShowForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any>(null);
 
@@ -26,15 +18,24 @@ const CategoryManagement = () => {
     setShowForm(true);
   };
 
-  const handleDelete = (categoryId: number) => {
-    setCategories(categories.filter(cat => cat.id !== categoryId));
-    console.log('Deletar categoria:', categoryId);
+  const handleDelete = (categoryId: string) => {
+    if (window.confirm('Tem certeza que deseja deletar esta categoria?')) {
+      deleteCategory.mutate(categoryId);
+    }
   };
 
   const handleCloseForm = () => {
     setShowForm(false);
     setEditingCategory(null);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -51,42 +52,48 @@ const CategoryManagement = () => {
           <CardTitle>Lista de Categorias</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {categories.map((category) => (
-                <TableRow key={category.id}>
-                  <TableCell className="font-medium">{category.name}</TableCell>
-                  <TableCell>{category.description}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(category)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(category.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          {categories.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              Nenhuma categoria encontrada. Clique em "Adicionar Categoria" para criar a primeira.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {categories.map((category) => (
+                  <TableRow key={category.id}>
+                    <TableCell className="font-medium">{category.name}</TableCell>
+                    <TableCell>{category.description || 'Sem descrição'}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(category)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(category.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 

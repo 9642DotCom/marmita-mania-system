@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from '@/hooks/use-toast';
+import { useDatabase } from '@/hooks/useDatabase';
 
 interface ProductFormProps {
   isOpen: boolean;
@@ -14,17 +14,19 @@ interface ProductFormProps {
   product?: any;
 }
 
-const categories = ['Executiva', 'Fitness', 'Caseira', 'Vegana', 'Gourmet', 'Regional', 'Infantil'];
-
 const ProductForm = ({ isOpen, onClose, product }: ProductFormProps) => {
+  const { createProduct, updateProduct, useCategories } = useDatabase();
+  const { data: categories = [] } = useCategories();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     price: '',
-    category: '',
-    image: '',
-    ingredients: ''
+    category_id: '',
+    image_url: '',
+    ingredients: '',
+    available: true
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (product) {
@@ -32,46 +34,58 @@ const ProductForm = ({ isOpen, onClose, product }: ProductFormProps) => {
         name: product.name || '',
         description: product.description || '',
         price: product.price?.toString() || '',
-        category: product.category || '',
-        image: product.image || '',
-        ingredients: product.ingredients?.join(', ') || ''
+        category_id: product.category_id || '',
+        image_url: product.image_url || '',
+        ingredients: product.ingredients?.join(', ') || '',
+        available: product.available ?? true
       });
     } else {
       setFormData({
         name: '',
         description: '',
         price: '',
-        category: '',
-        image: '',
-        ingredients: ''
+        category_id: '',
+        image_url: '',
+        ingredients: '',
+        available: true
       });
     }
   }, [product]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name.trim() || !formData.price || !formData.category) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Preencha nome, preço e categoria.",
-        variant: "destructive"
-      });
+    if (!formData.name.trim() || !formData.price) {
       return;
     }
 
-    console.log('Dados do produto:', {
-      ...formData,
-      price: parseFloat(formData.price),
-      ingredients: formData.ingredients.split(',').map(item => item.trim())
-    });
+    setIsSubmitting(true);
 
-    toast({
-      title: product ? "Produto atualizado!" : "Produto criado!",
-      description: `${formData.name} foi ${product ? 'atualizado' : 'adicionado'} com sucesso.`
-    });
+    try {
+      const productData = {
+        name: formData.name,
+        description: formData.description || undefined,
+        price: parseFloat(formData.price),
+        category_id: formData.category_id || undefined,
+        image_url: formData.image_url || undefined,
+        ingredients: formData.ingredients ? formData.ingredients.split(',').map(item => item.trim()) : undefined,
+        available: formData.available
+      };
 
-    onClose();
+      if (product) {
+        await updateProduct.mutateAsync({
+          id: product.id,
+          ...productData
+        });
+      } else {
+        await createProduct.mutateAsync(productData);
+      }
+      onClose();
+    } catch (error) {
+      console.error('Erro ao salvar produto:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -97,6 +111,7 @@ const ProductForm = ({ isOpen, onClose, product }: ProductFormProps) => {
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                 placeholder="Nome do produto"
+                required
               />
             </div>
 
@@ -121,32 +136,33 @@ const ProductForm = ({ isOpen, onClose, product }: ProductFormProps) => {
                   value={formData.price}
                   onChange={(e) => setFormData({...formData, price: e.target.value})}
                   placeholder="0.00"
+                  required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="category">Categoria *</Label>
+                <Label htmlFor="category">Categoria</Label>
                 <select
                   id="category"
-                  value={formData.category}
-                  onChange={(e) => setFormData({...formData, category: e.target.value})}
+                  value={formData.category_id}
+                  onChange={(e) => setFormData({...formData, category_id: e.target.value})}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <option value="">Selecione...</option>
                   {categories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
                 </select>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="image">ID da Imagem (Unsplash)</Label>
+              <Label htmlFor="image">URL da Imagem</Label>
               <Input
                 id="image"
-                value={formData.image}
-                onChange={(e) => setFormData({...formData, image: e.target.value})}
-                placeholder="photo-1618160702438-9b02ab6515c9"
+                value={formData.image_url}
+                onChange={(e) => setFormData({...formData, image_url: e.target.value})}
+                placeholder="https://exemplo.com/imagem.jpg"
               />
             </div>
 
@@ -161,12 +177,27 @@ const ProductForm = ({ isOpen, onClose, product }: ProductFormProps) => {
               />
             </div>
 
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="available"
+                checked={formData.available}
+                onChange={(e) => setFormData({...formData, available: e.target.checked})}
+                className="h-4 w-4"
+              />
+              <Label htmlFor="available">Disponível</Label>
+            </div>
+
             <div className="flex gap-3 pt-4">
               <Button type="button" onClick={onClose} variant="outline" className="flex-1">
                 Cancelar
               </Button>
-              <Button type="submit" className="flex-1 bg-orange-600 hover:bg-orange-700">
-                {product ? 'Atualizar' : 'Criar'}
+              <Button 
+                type="submit" 
+                className="flex-1 bg-orange-600 hover:bg-orange-700"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Salvando...' : (product ? 'Atualizar' : 'Criar')}
               </Button>
             </div>
           </form>

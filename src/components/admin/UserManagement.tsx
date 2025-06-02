@@ -4,67 +4,32 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { useDatabase } from '@/hooks/useDatabase';
 import UserForm from './UserForm';
 
 export interface User {
   id: string;
   name: string;
   email: string;
-  category: 'caixa' | 'entregador' | 'cozinha' | 'garcon';
-  password: string;
-  createdAt: string;
+  role: 'admin' | 'caixa' | 'entregador' | 'cozinha' | 'garcon';
+  created_at: string;
 }
 
 const UserManagement = () => {
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: '1',
-      name: 'João Silva',
-      email: 'joao@email.com',
-      category: 'caixa',
-      password: '123456',
-      createdAt: '2024-01-15'
-    },
-    {
-      id: '2',
-      name: 'Maria Santos',
-      email: 'maria@email.com',
-      category: 'entregador',
-      password: '123456',
-      createdAt: '2024-01-15'
-    }
-  ]);
+  const { useUsers, deleteUser } = useDatabase();
+  const { data: users = [], isLoading } = useUsers();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | undefined>();
 
-  const handleAddUser = (userData: Omit<User, 'id' | 'createdAt'>) => {
-    const newUser: User = {
-      ...userData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString().split('T')[0]
-    };
-    setUsers([...users, newUser]);
-    setIsFormOpen(false);
-  };
-
-  const handleEditUser = (userData: Omit<User, 'id' | 'createdAt'>) => {
-    if (editingUser) {
-      setUsers(users.map(user => 
-        user.id === editingUser.id 
-          ? { ...userData, id: editingUser.id, createdAt: editingUser.createdAt }
-          : user
-      ));
-      setEditingUser(undefined);
-      setIsFormOpen(false);
+  const handleDeleteUser = (id: string) => {
+    if (window.confirm('Tem certeza que deseja deletar este usuário?')) {
+      deleteUser.mutate(id);
     }
   };
 
-  const handleDeleteUser = (id: string) => {
-    setUsers(users.filter(user => user.id !== id));
-  };
-
-  const getCategoryBadgeVariant = (category: User['category']) => {
-    switch (category) {
+  const getCategoryBadgeVariant = (role: User['role']) => {
+    switch (role) {
+      case 'admin': return 'default';
       case 'caixa': return 'default';
       case 'entregador': return 'secondary';
       case 'cozinha': return 'destructive';
@@ -73,15 +38,24 @@ const UserManagement = () => {
     }
   };
 
-  const getCategoryLabel = (category: User['category']) => {
-    switch (category) {
+  const getCategoryLabel = (role: User['role']) => {
+    switch (role) {
+      case 'admin': return 'Admin';
       case 'caixa': return 'Caixa';
       case 'entregador': return 'Entregador';
       case 'cozinha': return 'Cozinha';
       case 'garcon': return 'Garçom';
-      default: return category;
+      default: return role;
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -93,56 +67,69 @@ const UserManagement = () => {
         </Button>
       </div>
 
-      <div className="grid gap-4">
-        {users.map((user) => (
-          <Card key={user.id}>
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-lg">{user.name}</CardTitle>
-                  <p className="text-sm text-gray-600">{user.email}</p>
+      {users.length === 0 ? (
+        <Card>
+          <CardContent className="p-8">
+            <div className="text-center text-gray-500">
+              Nenhum usuário encontrado. Clique em "Adicionar Usuário" para criar o primeiro.
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4">
+          {users.map((user) => (
+            <Card key={user.id}>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-lg">{user.name}</CardTitle>
+                    <p className="text-sm text-gray-600">{user.email}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Badge variant={getCategoryBadgeVariant(user.role as User['role'])}>
+                      {getCategoryLabel(user.role as User['role'])}
+                    </Badge>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <Badge variant={getCategoryBadgeVariant(user.category)}>
-                    {getCategoryLabel(user.category)}
-                  </Badge>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-between items-center">
+                  <div className="text-sm text-gray-500">
+                    Criado em: {new Date(user.created_at).toLocaleDateString('pt-BR')}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditingUser(user as User);
+                        setIsFormOpen(true);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDeleteUser(user.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex justify-between items-center">
-                <div className="text-sm text-gray-500">
-                  Criado em: {new Date(user.createdAt).toLocaleDateString('pt-BR')}
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setEditingUser(user);
-                      setIsFormOpen(true);
-                    }}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDeleteUser(user.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {isFormOpen && (
         <UserForm
           user={editingUser}
-          onSubmit={editingUser ? handleEditUser : handleAddUser}
+          onSubmit={() => {
+            setIsFormOpen(false);
+            setEditingUser(undefined);
+          }}
           onCancel={() => {
             setIsFormOpen(false);
             setEditingUser(undefined);

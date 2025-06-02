@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from '@/hooks/use-toast';
+import { useDatabase } from '@/hooks/useDatabase';
 
 interface CategoryFormProps {
   isOpen: boolean;
@@ -15,10 +15,12 @@ interface CategoryFormProps {
 }
 
 const CategoryForm = ({ isOpen, onClose, category }: CategoryFormProps) => {
+  const { createCategory, updateCategory } = useDatabase();
   const [formData, setFormData] = useState({
     name: '',
     description: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (category) {
@@ -34,26 +36,30 @@ const CategoryForm = ({ isOpen, onClose, category }: CategoryFormProps) => {
     }
   }, [category]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name.trim()) {
-      toast({
-        title: "Nome obrigatório",
-        description: "Digite o nome da categoria.",
-        variant: "destructive"
-      });
       return;
     }
 
-    console.log('Dados da categoria:', formData);
+    setIsSubmitting(true);
 
-    toast({
-      title: category ? "Categoria atualizada!" : "Categoria criada!",
-      description: `${formData.name} foi ${category ? 'atualizada' : 'criada'} com sucesso.`
-    });
-
-    onClose();
+    try {
+      if (category) {
+        await updateCategory.mutateAsync({
+          id: category.id,
+          ...formData
+        });
+      } else {
+        await createCategory.mutateAsync(formData);
+      }
+      onClose();
+    } catch (error) {
+      console.error('Erro ao salvar categoria:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -79,6 +85,7 @@ const CategoryForm = ({ isOpen, onClose, category }: CategoryFormProps) => {
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                 placeholder="Nome da categoria"
+                required
               />
             </div>
 
@@ -97,8 +104,12 @@ const CategoryForm = ({ isOpen, onClose, category }: CategoryFormProps) => {
               <Button type="button" onClick={onClose} variant="outline" className="flex-1">
                 Cancelar
               </Button>
-              <Button type="submit" className="flex-1 bg-orange-600 hover:bg-orange-700">
-                {category ? 'Atualizar' : 'Criar'}
+              <Button 
+                type="submit" 
+                className="flex-1 bg-orange-600 hover:bg-orange-700"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Salvando...' : (category ? 'Atualizar' : 'Criar')}
               </Button>
             </div>
           </form>

@@ -1,29 +1,57 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useDatabase } from '@/hooks/useDatabase';
 import { User } from './UserManagement';
 
 interface UserFormProps {
   user?: User;
-  onSubmit: (userData: Omit<User, 'id' | 'createdAt'>) => void;
+  onSubmit: () => void;
   onCancel: () => void;
 }
 
 const UserForm = ({ user, onSubmit, onCancel }: UserFormProps) => {
+  const { createUser, updateUser } = useDatabase();
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
-    category: user?.category || 'caixa' as User['category'],
-    password: user?.password || ''
+    role: user?.role || 'caixa' as User['role'],
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      });
+    }
+  }, [user]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    setIsSubmitting(true);
+
+    try {
+      if (user) {
+        await updateUser.mutateAsync({
+          id: user.id,
+          ...formData
+        });
+      } else {
+        await createUser.mutateAsync(formData);
+      }
+      onSubmit();
+    } catch (error) {
+      console.error('Erro ao salvar usuário:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (field: string, value: string) => {
@@ -60,12 +88,13 @@ const UserForm = ({ user, onSubmit, onCancel }: UserFormProps) => {
             </div>
 
             <div>
-              <Label htmlFor="category">Categoria</Label>
-              <Select value={formData.category} onValueChange={(value) => handleChange('category', value)}>
+              <Label htmlFor="role">Categoria</Label>
+              <Select value={formData.role} onValueChange={(value) => handleChange('role', value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione uma categoria" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="caixa">Caixa</SelectItem>
                   <SelectItem value="entregador">Entregador</SelectItem>
                   <SelectItem value="cozinha">Cozinha</SelectItem>
@@ -74,20 +103,13 @@ const UserForm = ({ user, onSubmit, onCancel }: UserFormProps) => {
               </Select>
             </div>
 
-            <div>
-              <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => handleChange('password', e.target.value)}
-                required
-              />
-            </div>
-
             <div className="flex gap-2 pt-4">
-              <Button type="submit" className="flex-1">
-                {user ? 'Atualizar' : 'Adicionar'}
+              <Button 
+                type="submit" 
+                className="flex-1"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Salvando...' : (user ? 'Atualizar' : 'Adicionar')}
               </Button>
               <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
                 Cancelar

@@ -381,6 +381,10 @@ export type Database = {
         Args: { target_company_id: string }
         Returns: boolean
       }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       is_company_admin: {
         Args: { company_uuid: string }
         Returns: boolean

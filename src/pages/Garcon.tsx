@@ -334,6 +334,8 @@ const Garcon = () => {
         return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Livre</Badge>;
       case 'occupied':
         return <Badge variant="default" className="bg-red-500">Ocupada</Badge>;
+      case 'eating':
+        return <Badge variant="secondary" className="bg-blue-500">Cliente Comendo</Badge>;
       case 'waiting_payment':
         return <Badge variant="secondary" className="bg-yellow-500">Aguardando Pagamento</Badge>;
       default:
@@ -347,6 +349,8 @@ const Garcon = () => {
         return 'border-green-300 bg-green-50';
       case 'occupied':
         return 'border-red-300 bg-red-50';
+      case 'eating':
+        return 'border-blue-300 bg-blue-50';
       case 'waiting_payment':
         return 'border-yellow-300 bg-yellow-50';
       default:
@@ -356,6 +360,7 @@ const Garcon = () => {
 
   const availableTables = tables.filter(t => (t.status || 'available') === 'available');
   const occupiedTables = tables.filter(t => (t.status || 'available') === 'occupied');
+  const eatingTables = tables.filter(t => (t.status || 'available') === 'eating');
   const waitingPaymentTables = tables.filter(t => (t.status || 'available') === 'waiting_payment');
 
   // Corrigindo os filtros de pedidos prontos para entrega
@@ -391,7 +396,7 @@ const Garcon = () => {
       
       toast({
         title: "Pedido entregue! ✅",
-        description: `Pedido da Mesa ${order.tables?.number} foi entregue`,
+        description: `Pedido da Mesa ${order.tables?.number} foi entregue. Cliente está comendo.`,
       });
     } catch (error: any) {
       toast({
@@ -460,8 +465,8 @@ const Garcon = () => {
               <div className="flex items-center">
                 <UtensilsCrossed className="h-8 w-8 text-red-600" />
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Mesas Ocupadas</p>
-                  <p className="text-2xl font-bold text-gray-900">{occupiedTables.length}</p>
+                  <p className="text-sm font-medium text-gray-600">Comendo</p>
+                  <p className="text-2xl font-bold text-gray-900">{eatingTables.length}</p>
                 </div>
               </div>
             </CardContent>

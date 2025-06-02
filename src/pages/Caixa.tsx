@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,17 +12,17 @@ import { toast } from '@/hooks/use-toast';
 const Caixa = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { signOut } = useAuth();
-  const { useOrders, updateOrderStatus } = useDatabase();
+  const { useOrders, processPayment } = useDatabase();
   const { data: orders = [], isLoading } = useOrders();
 
   const handlePayment = async (orderId: string) => {
     try {
-      await updateOrderStatus.mutate(
-        { id: orderId, status: 'entregue' },
+      await processPayment.mutate(
+        orderId,
         {
           onSuccess: () => {
             toast({
-              title: "Pagamento processado!",
+              title: "Pagamento processado! 💰",
               description: "Pedido finalizado e mesa liberada",
             });
           },
@@ -45,12 +44,17 @@ const Caixa = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, notes?: string) => {
+    // Verificar se já foi pago
+    const isPaid = notes?.includes('[PAGO]');
+    
+    if (isPaid) {
+      return <Badge variant="default" className="bg-green-500">Pago</Badge>;
+    }
+    
     switch (status) {
-      case 'saiu_entrega':
-        return <Badge variant="destructive">Aguardando Pagamento</Badge>;
       case 'entregue':
-        return <Badge variant="default">Pago</Badge>;
+        return <Badge variant="destructive">Aguardando Pagamento</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -67,13 +71,13 @@ const Caixa = () => {
     );
   }
 
-  // Filtrar pedidos prontos para pagamento (entregues pelo garçom) e já pagos
+  // Filtrar pedidos para pagamento (entregues e locais)
   const paymentOrders = orders.filter((order: Order) => 
-    order.order_type === 'local' && (order.status === 'saiu_entrega' || order.status === 'entregue')
+    order.order_type === 'local' && order.status === 'entregue'
   );
 
-  const pendingPayments = paymentOrders.filter((order: Order) => order.status === 'saiu_entrega');
-  const completedPayments = paymentOrders.filter((order: Order) => order.status === 'entregue');
+  const pendingPayments = paymentOrders.filter((order: Order) => !order.notes?.includes('[PAGO]'));
+  const completedPayments = paymentOrders.filter((order: Order) => order.notes?.includes('[PAGO]'));
 
   // Calcular total do dia (pedidos pagos)
   const totalDay = completedPayments.reduce((sum, order) => sum + order.total_amount, 0);
@@ -85,8 +89,8 @@ const Caixa = () => {
   );
 
   console.log('📊 Estados dos pedidos do CAIXA:');
-  console.log('💰 Pedidos pendentes pagamento (saiu_entrega):', pendingPayments.length);
-  console.log('✅ Pedidos pagos (entregue):', completedPayments.length);
+  console.log('💰 Pedidos pendentes pagamento:', pendingPayments.length);
+  console.log('✅ Pedidos pagos:', completedPayments.length);
   console.log('💵 Total do dia:', totalDay.toFixed(2));
 
   return (
@@ -158,50 +162,54 @@ const Caixa = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {filteredOrders.map((order: Order) => (
-                <div key={order.id} className="border rounded-lg p-4 bg-white">
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h3 className="font-semibold text-lg">#{order.id.slice(-6)}</h3>
-                      <p className="text-gray-600">
-                        {order.order_type === 'local' 
-                          ? `Mesa ${order.tables?.number || 'N/A'}` 
-                          : order.customer_name || 'Cliente não informado'
-                        }
-                      </p>
-                      {order.order_type === 'local' && order.customer_name && (
-                        <p className="text-sm text-gray-500">{order.customer_name}</p>
+              {filteredOrders.map((order: Order) => {
+                const isPaid = order.notes?.includes('[PAGO]');
+                
+                return (
+                  <div key={order.id} className="border rounded-lg p-4 bg-white">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <h3 className="font-semibold text-lg">#{order.id.slice(-6)}</h3>
+                        <p className="text-gray-600">
+                          Mesa {order.tables?.number || 'N/A'}
+                        </p>
+                        {order.customer_name && (
+                          <p className="text-sm text-gray-500">{order.customer_name}</p>
+                        )}
+                        <p className="text-xs text-blue-600 font-medium mt-1">
+                          Status da Mesa: Cliente comendo 🍽️
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-green-600">R$ {order.total_amount.toFixed(2)}</p>
+                        <p className="text-sm text-gray-500">
+                          {new Date(order.created_at).toLocaleTimeString('pt-BR')}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {order.notes && !order.notes.includes('[PAGO]') && (
+                      <div className="mb-3">
+                        <p className="text-sm text-gray-600 mb-1">Observações:</p>
+                        <p className="text-sm">{order.notes}</p>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between items-center">
+                      {getStatusBadge(order.status, order.notes)}
+                      {!isPaid && (
+                        <Button 
+                          onClick={() => handlePayment(order.id)}
+                          className="bg-green-600 hover:bg-green-700"
+                          disabled={processPayment.isPending}
+                        >
+                          {processPayment.isPending ? 'Processando...' : 'Processar Pagamento'}
+                        </Button>
                       )}
                     </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-green-600">R$ {order.total_amount.toFixed(2)}</p>
-                      <p className="text-sm text-gray-500">
-                        {new Date(order.created_at).toLocaleTimeString('pt-BR')}
-                      </p>
-                    </div>
                   </div>
-                  
-                  {order.notes && (
-                    <div className="mb-3">
-                      <p className="text-sm text-gray-600 mb-1">Observações:</p>
-                      <p className="text-sm">{order.notes}</p>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-center">
-                    {getStatusBadge(order.status)}
-                    {order.status === 'saiu_entrega' && (
-                      <Button 
-                        onClick={() => handlePayment(order.id)}
-                        className="bg-green-600 hover:bg-green-700"
-                        disabled={updateOrderStatus.isPending}
-                      >
-                        {updateOrderStatus.isPending ? 'Processando...' : 'Processar Pagamento'}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               {filteredOrders.length === 0 && (
                 <div className="text-center py-8">
                   <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />

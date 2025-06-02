@@ -1,4 +1,3 @@
-
 // Tipos temporários para as novas tabelas até o Supabase atualizar os tipos automaticamente
 export interface Company {
   id: string;
@@ -50,7 +49,7 @@ export interface Table {
   number: number;
   capacity: number;
   available: boolean;
-  status?: 'available' | 'occupied' | 'waiting_payment';
+  status?: 'available' | 'occupied' | 'eating' | 'waiting_payment';
   created_at: string;
   updated_at: string;
 }

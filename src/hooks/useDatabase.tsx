@@ -251,32 +251,44 @@ export const useDatabase = () => {
     mutationFn: async ({ id, status }: { id: string; status: 'pendente' | 'preparando' | 'saiu_entrega' | 'entregue' | 'cancelado' }) => {
       console.log(`Updating order ${id} to status ${status}`);
       
-      // Se está finalizando um pedido local (pagamento), liberar a mesa
-      if (status === 'entregue') {
-        // Primeiro buscar o pedido para verificar se é local e qual mesa
-        const { data: orderData, error: orderError } = await supabase
-          .from('orders')
-          .select('table_id, order_type')
-          .eq('id', id)
-          .single();
+      // Primeiro buscar o pedido para verificar se é local e qual mesa
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .select('table_id, order_type')
+        .eq('id', id)
+        .single();
 
-        if (orderError) {
-          console.error('Error fetching order for table update:', orderError);
-          throw orderError;
-        }
+      if (orderError) {
+        console.error('Error fetching order for table update:', orderError);
+        throw orderError;
+      }
 
-        // Se for pedido local e tiver mesa, liberar a mesa
-        if (orderData.order_type === 'local' && orderData.table_id) {
+      // Lógica de atualização do status da mesa baseada no status do pedido
+      if (orderData.order_type === 'local' && orderData.table_id) {
+        if (status === 'entregue') {
+          // Quando garçom entrega na mesa, cliente está comendo
+          const { error: tableError } = await supabase
+            .from('tables')
+            .update({ status: 'eating' })
+            .eq('id', orderData.table_id);
+
+          if (tableError) {
+            console.error('Error updating table status to eating:', tableError);
+            throw tableError;
+          }
+          console.log(`Mesa ${orderData.table_id} agora está com status "eating" - cliente comendo`);
+        } else if (status === 'cancelado') {
+          // Se pedido foi cancelado, liberar a mesa
           const { error: tableError } = await supabase
             .from('tables')
             .update({ status: 'available' })
             .eq('id', orderData.table_id);
 
           if (tableError) {
-            console.error('Error updating table status:', tableError);
+            console.error('Error updating table status to available:', tableError);
             throw tableError;
           }
-          console.log(`Mesa ${orderData.table_id} liberada após pagamento`);
+          console.log(`Mesa ${orderData.table_id} liberada após cancelamento`);
         }
       }
 
@@ -294,6 +306,65 @@ export const useDatabase = () => {
       }
       
       console.log(`Order ${id} updated to ${status}`);
+      return data;
+    },
+    queryKey: ['orders', 'tables'],
+  });
+
+  // Nova função para processar pagamento no caixa
+  const processPayment = useAuthenticatedMutation({
+    mutationFn: async (orderId: string) => {
+      console.log(`Processing payment for order ${orderId}`);
+      
+      // Primeiro buscar o pedido para verificar se é local e qual mesa
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .select('table_id, order_type, status')
+        .eq('id', orderId)
+        .single();
+
+      if (orderError) {
+        console.error('Error fetching order for payment:', orderError);
+        throw orderError;
+      }
+
+      // Verificar se o pedido está no status correto para pagamento
+      if (orderData.status !== 'entregue') {
+        throw new Error('Pedido não está pronto para pagamento');
+      }
+
+      // Se for pedido local e tiver mesa, liberar a mesa após pagamento
+      if (orderData.order_type === 'local' && orderData.table_id) {
+        const { error: tableError } = await supabase
+          .from('tables')
+          .update({ status: 'available' })
+          .eq('id', orderData.table_id);
+
+        if (tableError) {
+          console.error('Error updating table status after payment:', tableError);
+          throw tableError;
+        }
+        console.log(`Mesa ${orderData.table_id} liberada após pagamento`);
+      }
+
+      // Atualizar o pedido para status "pago" (vamos usar um status personalizado)
+      // Como não temos esse status no enum, vamos manter como 'entregue' mas marcar como pago
+      const { data, error } = await supabase
+        .from('orders')
+        .update({ 
+          status: 'entregue',
+          notes: (orderData.notes || '') + ' [PAGO]' 
+        })
+        .eq('id', orderId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error processing payment:', error);
+        throw error;
+      }
+      
+      console.log(`Payment processed for order ${orderId}`);
       return data;
     },
     queryKey: ['orders', 'tables'],
@@ -493,6 +564,7 @@ export const useDatabase = () => {
     createOrder,
     createOrderItems,
     updateOrderStatus,
+    processPayment,
     
     // Users
     useUsers,

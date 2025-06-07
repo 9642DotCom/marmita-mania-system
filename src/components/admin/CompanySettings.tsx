@@ -70,34 +70,8 @@ const CompanySettings = () => {
         )}
       </div>
 
-      {!hasData ? (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <div className="text-gray-500 mb-4">
-              <p className="text-lg font-medium">Nenhuma configuração encontrada</p>
-              <p className="text-sm">Configure as informações da sua empresa para personalizar o site.</p>
-            </div>
-            <Button 
-              onClick={() => {
-                console.log('Setting isEditing to true from no data state');
-                setIsEditing(true);
-              }}
-              className="bg-orange-600 hover:bg-orange-700"
-            >
-              Configurar Empresa
-            </Button>
-          </CardContent>
-        </Card>
-      ) : !isEditing ? (
-        // Modo de visualização
-        <div className="space-y-6">
-          <RestaurantInfoView formData={formData} />
-          <Separator />
-          <LandingPageView formData={formData} />
-          <SectionsView formData={formData} />
-        </div>
-      ) : (
-        // Modo de edição
+      {isEditing ? (
+        // Modo de edição - sempre mostra o formulário quando isEditing é true
         <form onSubmit={handleSubmit} className="space-y-6">
           <RestaurantInfoEdit 
             formData={formData}
@@ -126,6 +100,33 @@ const CompanySettings = () => {
             </Button>
           </div>
         </form>
+      ) : hasData ? (
+        // Modo de visualização - só mostra quando tem dados e não está editando
+        <div className="space-y-6">
+          <RestaurantInfoView formData={formData} />
+          <Separator />
+          <LandingPageView formData={formData} />
+          <SectionsView formData={formData} />
+        </div>
+      ) : (
+        // Tela inicial - quando não tem dados e não está editando
+        <Card>
+          <CardContent className="p-8 text-center">
+            <div className="text-gray-500 mb-4">
+              <p className="text-lg font-medium">Nenhuma configuração encontrada</p>
+              <p className="text-sm">Configure as informações da sua empresa para personalizar o site.</p>
+            </div>
+            <Button 
+              onClick={() => {
+                console.log('Setting isEditing to true from no data state');
+                setIsEditing(true);
+              }}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              Configurar Empresa
+            </Button>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

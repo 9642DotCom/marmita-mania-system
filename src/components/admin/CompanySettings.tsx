@@ -26,7 +26,12 @@ const CompanySettings = () => {
     isPending,
   } = useCompanySettingsForm();
 
+  console.log('CompanySettings Component - isLoading:', isLoading);
+  console.log('CompanySettings Component - hasData:', hasData);
+  console.log('CompanySettings Component - isEditing:', isEditing);
+
   if (isLoading) {
+    console.log('CompanySettings: Showing loading state');
     return (
       <div className="flex items-center justify-center p-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
@@ -73,7 +78,10 @@ const CompanySettings = () => {
               <p className="text-sm">Configure as informações da sua empresa para personalizar o site.</p>
             </div>
             <Button 
-              onClick={() => setIsEditing(true)}
+              onClick={() => {
+                console.log('Setting isEditing to true from no data state');
+                setIsEditing(true);
+              }}
               className="bg-orange-600 hover:bg-orange-700"
             >
               Configurar Empresa

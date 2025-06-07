@@ -25,6 +25,9 @@ export const useCompanySettingsForm = () => {
   const { useCompanySettings, updateCompanySettings } = useDatabase();
   const { data: settings, isLoading } = useCompanySettings();
   
+  console.log('Company Settings Hook - settings:', settings);
+  console.log('Company Settings Hook - isLoading:', isLoading);
+  
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<CompanySettingsFormData>({
     restaurant_name: '',
@@ -46,6 +49,7 @@ export const useCompanySettingsForm = () => {
 
   useEffect(() => {
     if (settings) {
+      console.log('Updating form data with settings:', settings);
       setFormData({
         restaurant_name: settings.restaurant_name || '',
         restaurant_slogan: settings.restaurant_slogan || '',
@@ -63,6 +67,8 @@ export const useCompanySettingsForm = () => {
         item3_title: settings.item3_title || '',
         item3_description: settings.item3_description || '',
       });
+    } else {
+      console.log('No settings found, keeping empty form data');
     }
   }, [settings]);
 
@@ -131,6 +137,9 @@ export const useCompanySettingsForm = () => {
   };
 
   const hasData = settings && Object.values(settings).some(value => value && value !== '');
+  
+  console.log('Company Settings Hook - hasData:', hasData);
+  console.log('Company Settings Hook - isEditing:', isEditing);
 
   return {
     settings,

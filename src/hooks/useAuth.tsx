@@ -244,18 +244,80 @@ export const useAuth = () => {
 
   const signUp = async (email: string, password: string, metadata?: any) => {
     try {
-      console.log('Tentando criar conta...');
+      console.log('Tentando criar conta e empresa...', metadata);
       cleanupAuthState();
       
-      const { data, error } = await supabase.auth.signUp({
+      // 1. Criar usuário primeiro
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: metadata
+          data: {
+            name: metadata?.ownerName,
+            company_name: metadata?.restaurantName,
+          }
         }
       });
+
+      if (authError) throw authError;
+
+      if (authData.user) {
+        console.log('Usuário criado:', authData.user.id);
+        
+        // 2. Aguardar um pouco para garantir que o usuário foi criado
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // 3. Fazer login temporário para ter acesso autenticado
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (signInError) throw signInError;
+
+        // 4. Criar empresa (agora com usuário autenticado)
+        const { data: companyData, error: companyError } = await supabase
+          .from('companies')
+          .insert([
+            {
+              name: metadata?.restaurantName,
+              email: email,
+              phone: metadata?.phone,
+              address: metadata?.address,
+              owner_id: authData.user.id,
+            }
+          ])
+          .select()
+          .single();
+
+        if (companyError) throw companyError;
+
+        console.log('Empresa criada:', companyData);
+
+        // 5. Criar perfil do usuário como admin da empresa
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([
+            {
+              id: authData.user.id,
+              company_id: companyData.id,
+              name: metadata?.ownerName,
+              email: email,
+              role: 'admin', // SEMPRE admin quando cria uma nova empresa
+            }
+          ]);
+
+        if (profileError) {
+          console.error('Erro ao criar perfil:', profileError);
+          // Continua mesmo se der erro no perfil, pois o usuário e empresa foram criados
+        } else {
+          console.log('Perfil admin criado com sucesso');
+        }
+
+        return { data: authData, error: null };
+      }
       
-      return { data, error };
+      return { data: authData, error: null };
     } catch (error) {
       console.error('Erro ao criar conta:', error);
       return { data: null, error };

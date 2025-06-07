@@ -32,19 +32,54 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
         
         // Se o usuário fez login e está na página de auth, redirecionar
         if (event === 'SIGNED_IN' && session?.user && location.pathname === '/auth') {
-          console.log('Usuário logou, redirecionando...');
+          console.log('Usuário logou, verificando perfil para redirecionamento...');
           
-          // Detectar role baseado no email
-          const email = session.user.email || '';
-          const isAdmin = email.includes('admin') || email.includes('rodrigo') || email === 'rodrigo_nunes.182@hotmail.com';
-          
-          setTimeout(() => {
-            if (isAdmin) {
-              navigate('/admin', { replace: true });
-            } else {
-              navigate('/garcon', { replace: true });
+          // Aguardar um pouco para garantir que o perfil foi criado
+          setTimeout(async () => {
+            try {
+              const { data: profileData } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', session.user.id)
+                .single();
+
+              const role = profileData?.role;
+              console.log('Role encontrada:', role);
+
+              if (role === 'admin') {
+                navigate('/admin', { replace: true });
+              } else if (role === 'entregador') {
+                navigate('/entregador', { replace: true });
+              } else if (role === 'caixa') {
+                navigate('/caixa', { replace: true });
+              } else if (role === 'cozinha') {
+                navigate('/cozinha', { replace: true });
+              } else if (role === 'garcon') {
+                navigate('/garcon', { replace: true });
+              } else {
+                // Fallback para detectar admin por email
+                const email = session.user.email || '';
+                const isAdmin = email.includes('admin') || email.includes('rodrigo') || email === 'rodrigo_nunes.182@hotmail.com';
+                
+                if (isAdmin) {
+                  navigate('/admin', { replace: true });
+                } else {
+                  navigate('/garcon', { replace: true });
+                }
+              }
+            } catch (error) {
+              console.error('Erro ao verificar perfil:', error);
+              // Fallback para detectar admin por email
+              const email = session.user.email || '';
+              const isAdmin = email.includes('admin') || email.includes('rodrigo') || email === 'rodrigo_nunes.182@hotmail.com';
+              
+              if (isAdmin) {
+                navigate('/admin', { replace: true });
+              } else {
+                navigate('/garcon', { replace: true });
+              }
             }
-          }, 500);
+          }, 1500); // Aguardar mais tempo para garantir que o perfil foi criado
         }
       }
     );

@@ -75,8 +75,8 @@ const RestaurantAuth = () => {
         });
       } else {
         toast({
-          title: "Cadastro realizado com sucesso!",
-          description: "Redirecionando...",
+          title: "Empresa criada com sucesso!",
+          description: "Você foi definido como administrador. Redirecionando...",
         });
       }
     } catch (error: any) {
@@ -100,7 +100,7 @@ const RestaurantAuth = () => {
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="signup">Cadastro</TabsTrigger>
+              <TabsTrigger value="signup">Criar Empresa</TabsTrigger>
             </TabsList>
             
             <TabsContent value="login">
@@ -188,7 +188,7 @@ const RestaurantAuth = () => {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Cadastrando...' : 'Cadastrar'}
+                  {isLoading ? 'Criando Empresa...' : 'Criar Empresa'}
                 </Button>
               </form>
             </TabsContent>

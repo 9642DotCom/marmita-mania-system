@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import AdminSidebar from '@/components/admin/AdminSidebar';
@@ -11,12 +10,14 @@ import AdminHeader from '@/components/admin/AdminHeader';
 import AdminStats from '@/components/admin/AdminStats';
 import AdminCharts from '@/components/admin/AdminCharts';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 export type AdminSection = 'dashboard' | 'products' | 'categories' | 'orders' | 'users' | 'settings';
 
 const Admin = () => {
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
   const { profile, loading } = useAuth();
+  const navigate = useNavigate();
 
   console.log('Admin page - profile:', profile);
 

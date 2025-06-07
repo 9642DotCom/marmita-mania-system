@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -46,7 +45,12 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
               const role = profileData?.role;
               console.log('Role encontrada:', role);
 
-              if (role === 'admin') {
+              // Detectar se é admin por email como fallback
+              const email = session.user.email || '';
+              const isAdminByEmail = email.includes('admin') || email.includes('rodrigo') || email === 'rodrigo_nunes.182@hotmail.com';
+
+              if (role === 'admin' || isAdminByEmail) {
+                console.log('Redirecionando para admin');
                 navigate('/admin', { replace: true });
               } else if (role === 'entregador') {
                 navigate('/entregador', { replace: true });
@@ -57,29 +61,25 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
               } else if (role === 'garcon') {
                 navigate('/garcon', { replace: true });
               } else {
-                // Fallback para detectar admin por email
-                const email = session.user.email || '';
-                const isAdmin = email.includes('admin') || email.includes('rodrigo') || email === 'rodrigo_nunes.182@hotmail.com';
-                
-                if (isAdmin) {
-                  navigate('/admin', { replace: true });
-                } else {
-                  navigate('/garcon', { replace: true });
-                }
+                // Se não encontrou role específica, verificar se é novo usuário que acabou de criar empresa
+                console.log('Role não encontrada, assumindo admin para novo usuário');
+                navigate('/admin', { replace: true });
               }
             } catch (error) {
               console.error('Erro ao verificar perfil:', error);
-              // Fallback para detectar admin por email
+              // Fallback: detectar admin por email ou assumir admin para novos usuários
               const email = session.user.email || '';
-              const isAdmin = email.includes('admin') || email.includes('rodrigo') || email === 'rodrigo_nunes.182@hotmail.com';
+              const isAdminByEmail = email.includes('admin') || email.includes('rodrigo') || email === 'rodrigo_nunes.182@hotmail.com';
               
-              if (isAdmin) {
+              if (isAdminByEmail) {
                 navigate('/admin', { replace: true });
               } else {
-                navigate('/garcon', { replace: true });
+                // Para novos usuários que acabaram de criar conta, assumir admin
+                console.log('Erro ao buscar perfil, assumindo admin para novo usuário');
+                navigate('/admin', { replace: true });
               }
             }
-          }, 1500); // Aguardar mais tempo para garantir que o perfil foi criado
+          }, 2000); // Aguardar mais tempo para garantir que o perfil foi criado
         }
       }
     );

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -76,8 +75,7 @@ export const useAuth = () => {
       }
 
       const userEmail = userData.user?.email || '';
-      
-      const isAdmin = userEmail.includes('admin') || userEmail.includes('rodrigo') || userEmail === 'rodrigo_nunes.182@hotmail.com';
+      const isAdminByEmail = userEmail.includes('admin') || userEmail.includes('rodrigo') || userEmail === 'rodrigo_nunes.182@hotmail.com';
       
       const { data, error } = await supabase
         .from('profiles')
@@ -90,24 +88,24 @@ export const useAuth = () => {
         
         const defaultProfile = { 
           id: userId, 
-          role: isAdmin ? 'admin' : 'garcon',
-          name: isAdmin ? 'Administrador' : 'Garçom',
+          role: isAdminByEmail ? 'admin' : 'admin', // Sempre admin para novos usuários
+          name: isAdminByEmail ? 'Administrador' : 'Administrador',
           email: userEmail,
           company_id: 'default-company-id',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         } as Profile;
         
-        console.log('Criando perfil padrão:', defaultProfile);
+        console.log('Criando perfil padrão admin:', defaultProfile);
         setProfile(defaultProfile);
         
         try {
           await supabase
             .from('profiles')
             .insert([defaultProfile]);
-          console.log('Perfil inserido no banco de dados com sucesso');
+          console.log('Perfil admin inserido no banco de dados com sucesso');
         } catch (insertError) {
-          console.log('Erro ao inserir perfil no banco, mas continuando com perfil em memória:', insertError);
+          console.log('Erro ao inserir perfil no banco, mas continuando com perfil admin em memória:', insertError);
         }
       } else if (data) {
         console.log('Perfil carregado com sucesso:', data);
@@ -119,12 +117,12 @@ export const useAuth = () => {
         
         setProfile(profileWithCompany);
       } else {
-        console.log('Nenhum perfil encontrado, criando perfil padrão...');
+        console.log('Nenhum perfil encontrado, criando perfil admin...');
         
         const defaultProfile = { 
           id: userId, 
-          role: isAdmin ? 'admin' : 'garcon',
-          name: isAdmin ? 'Administrador' : 'Garçom',
+          role: 'admin', // SEMPRE admin para novos usuários
+          name: 'Administrador',
           email: userEmail,
           company_id: 'default-company-id',
           created_at: new Date().toISOString(),
@@ -137,17 +135,17 @@ export const useAuth = () => {
           await supabase
             .from('profiles')
             .insert([defaultProfile]);
-          console.log('Perfil inserido no banco de dados com sucesso');
+          console.log('Perfil admin inserido no banco de dados com sucesso');
         } catch (insertError) {
-          console.log('Erro ao inserir perfil no banco, mas continuando com perfil em memória:', insertError);
+          console.log('Erro ao inserir perfil no banco, mas continuando com perfil admin em memória:', insertError);
         }
       }
 
       const currentPath = window.location.pathname;
       if (currentPath === '/auth') {
-        console.log('Redirecionamento necessário para role:', profile?.role || (isAdmin ? 'admin' : 'garcon'));
+        console.log('Redirecionamento necessário para admin');
         setTimeout(() => {
-          redirectBasedOnRole(profile?.role || (isAdmin ? 'admin' : 'garcon'));
+          redirectBasedOnRole('admin'); // Sempre redirecionar para admin
         }, 100);
       }
     } catch (error) {
@@ -219,8 +217,8 @@ export const useAuth = () => {
         navigate('/garcon', { replace: true });
         break;
       default:
-        console.log('Redirecionando para /');
-        navigate('/', { replace: true });
+        console.log('Redirecionando para /admin como fallback');
+        navigate('/admin', { replace: true }); // Fallback para admin
         break;
     }
   };

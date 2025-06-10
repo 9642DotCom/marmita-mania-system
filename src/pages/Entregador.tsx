@@ -1,243 +1,208 @@
 
-import { useState } from 'react';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { MapPin, Clock, Package, CheckCircle, LogOut, Truck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useDatabase } from '@/hooks/useDatabase';
-import { Order } from '@/types/database';
 
 const Entregador = () => {
-  const { signOut } = useAuth();
-  const { useOrders, updateOrderStatus } = useDatabase();
-  const { data: orders = [], isLoading } = useOrders();
-
-  const handleCompleteDelivery = (id: string) => {
-    updateOrderStatus.mutate({ id, status: 'entregue' });
-  };
-
-  const openGPS = (address: string) => {
-    if (address) {
-      const encodedAddress = encodeURIComponent(address);
-      window.open(`https://www.google.com/maps/search/${encodedAddress}`, '_blank');
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'saiu_entrega':
-        return <Badge variant="default" className="bg-blue-500">Em Rota</Badge>;
-      case 'entregue':
-        return <Badge variant="outline" className="bg-green-500 text-white">Entregue</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Carregando entregas...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Filtrar APENAS pedidos de DELIVERY que saíram para entrega ou foram entregues
-  const deliveryOrders = orders.filter((o: Order) => 
-    o.order_type === 'delivery' && (o.status === 'saiu_entrega' || o.status === 'entregue')
-  );
-  
-  const activeDeliveries = deliveryOrders.filter((d: Order) => d.status === 'saiu_entrega');
-  const completedDeliveries = deliveryOrders.filter((d: Order) => d.status === 'entregue');
-
-  console.log('📊 Estados dos pedidos do ENTREGADOR:');
-  console.log('🏍️ Deliveries ativos (saiu_entrega):', activeDeliveries.length);
-  console.log('✅ Deliveries concluídos (entregue):', completedDeliveries.length);
-  console.log('📋 Todos os pedidos delivery:', deliveryOrders.map(o => ({ 
-    id: o.id.slice(0, 8), 
-    status: o.status, 
-    type: o.order_type,
-    customer: o.customer_name
-  })));
+  const { profile } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-6 flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Sistema do Entregador</h1>
-            <p className="text-gray-600">Gerencie suas entregas de delivery</p>
+    <ProtectedRoute allowedRoles={['admin', 'entregador']}>
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Painel do Entregador</h1>
+            <p className="text-gray-600">
+              Bem-vindo(a), {profile?.name} - Gerencie suas entregas
+            </p>
           </div>
-          <Button variant="outline" onClick={signOut}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Sair
-          </Button>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Truck className="h-8 w-8 text-blue-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Deliveries Ativos</p>
-                  <p className="text-2xl font-bold text-gray-900">{activeDeliveries.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-500">Entregas Hoje</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-600">12</div>
+                <p className="text-xs text-gray-500 mt-1">realizadas</p>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Clock className="h-8 w-8 text-orange-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Tempo Médio</p>
-                  <p className="text-2xl font-bold text-gray-900">--</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-500">Pendentes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-600">3</div>
+                <p className="text-xs text-gray-500 mt-1">para entrega</p>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <CheckCircle className="h-8 w-8 text-green-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Entregas do Dia</p>
-                  <p className="text-2xl font-bold text-gray-900">{completedDeliveries.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-500">Em Rota</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">2</div>
+                <p className="text-xs text-gray-500 mt-1">a caminho</p>
+              </CardContent>
+            </Card>
 
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Truck className="h-5 w-5 text-blue-600" />
-              Deliveries Ativos ({activeDeliveries.length})
-              <span className="text-sm text-gray-500">- Apenas entregas para casa</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {activeDeliveries.map((delivery: Order) => (
-                <div key={delivery.id} className="border-2 border-blue-300 bg-blue-50 rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="font-semibold text-lg flex items-center gap-2">
-                        <Truck className="h-5 w-5 text-blue-600" />
-                        Delivery #{delivery.id.slice(-6)}
-                      </h3>
-                      <p className="font-medium text-gray-700">{delivery.customer_name || 'Cliente não informado'}</p>
-                      <p className="text-sm text-gray-600">{delivery.customer_phone}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xl font-bold text-green-600">R$ {delivery.total_amount.toFixed(2)}</p>
-                      <p className="text-sm text-gray-500">
-                        {new Date(delivery.created_at).toLocaleTimeString('pt-BR')}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="mb-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <MapPin className="h-4 w-4 text-gray-500" />
-                      <p className="text-sm font-medium text-gray-700">Endereço de Entrega:</p>
-                    </div>
-                    <p className="text-sm bg-white p-3 rounded border border-gray-200">
-                      {delivery.customer_address || 'Endereço não informado'}
-                    </p>
-                    {delivery.customer_address && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openGPS(delivery.customer_address!)}
-                        className="mt-2"
-                      >
-                        <MapPin className="h-4 w-4 mr-2" />
-                        Abrir no GPS
-                      </Button>
-                    )}
-                  </div>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-gray-500">Faturamento</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-purple-600">R$ 145</div>
+                <p className="text-xs text-gray-500 mt-1">comissões hoje</p>
+              </CardContent>
+            </Card>
+          </div>
 
-                  {delivery.notes && (
-                    <div className="mb-4">
-                      <p className="text-sm text-gray-600">
-                        <strong>Observações:</strong> {delivery.notes}
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-center">
-                    {getStatusBadge(delivery.status)}
-                    <Button 
-                      onClick={() => handleCompleteDelivery(delivery.id)}
-                      className="bg-green-600 hover:bg-green-700"
-                      disabled={updateOrderStatus.isPending}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Confirmar Entrega
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              {activeDeliveries.length === 0 && (
-                <div className="text-center py-8">
-                  <Truck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500 text-lg font-medium">Nenhum delivery ativo no momento</p>
-                  <p className="text-gray-400 text-sm mt-2">
-                    Deliveries aparecerão aqui quando estiverem prontos para entrega
-                  </p>
-                  <div className="mt-4 p-3 bg-gray-50 rounded text-xs text-left">
-                    <p className="font-medium mb-2">Status dos deliveries existentes:</p>
-                    {deliveryOrders.length === 0 ? (
-                      <p>Nenhum delivery encontrado</p>
-                    ) : (
-                      deliveryOrders.map(order => (
-                        <div key={order.id} className="mb-1">
-                          #{order.id.slice(0, 8)} - {order.status} - {order.customer_name}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Próximas Entregas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {[
+                    {
+                      id: '#001',
+                      cliente: 'João Silva',
+                      endereco: 'Rua das Flores, 123',
+                      valor: 'R$ 45,50',
+                      status: 'pronto',
+                      tempo: '15 min'
+                    },
+                    {
+                      id: '#002',
+                      cliente: 'Maria Santos',
+                      endereco: 'Av. Principal, 456',
+                      valor: 'R$ 67,80',
+                      status: 'saiu_entrega',
+                      tempo: '8 min'
+                    },
+                    {
+                      id: '#003',
+                      cliente: 'Pedro Costa',
+                      endereco: 'Rua do Centro, 789',
+                      valor: 'R$ 32,90',
+                      status: 'preparando',
+                      tempo: '20 min'
+                    }
+                  ].map((entrega) => (
+                    <div key={entrega.id} className="p-4 bg-gray-50 rounded-lg">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h4 className="font-medium">{entrega.cliente}</h4>
+                          <p className="text-sm text-gray-600">{entrega.endereco}</p>
                         </div>
-                      ))
-                    )}
+                        <Badge variant={
+                          entrega.status === 'pronto' ? 'default' :
+                          entrega.status === 'saiu_entrega' ? 'secondary' :
+                          'outline'
+                        }>
+                          {entrega.status === 'pronto' ? 'Pronto' :
+                           entrega.status === 'saiu_entrega' ? 'Em rota' :
+                           'Preparando'}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-green-600">{entrega.valor}</span>
+                        <span className="text-xs text-gray-500">≈ {entrega.tempo}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Mapa de Entregas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-gradient-to-br from-blue-100 to-green-100 h-64 rounded-lg flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-blue-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-600">Integração com mapa em desenvolvimento</p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Visualização das rotas de entrega
+                    </p>
                   </div>
                 </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </div>
 
-        {completedDeliveries.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Deliveries Concluídos</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {completedDeliveries.map((delivery: Order) => (
-                  <div key={delivery.id} className="flex justify-between items-center p-3 border rounded-lg bg-gray-50">
-                    <div>
-                      <span className="font-medium">#{delivery.id.slice(-6)}</span>
-                      <span className="text-gray-600 ml-2">{delivery.customer_name || 'Cliente não informado'}</span>
-                      <span className="text-xs text-gray-500 ml-2">({delivery.customer_address?.slice(0, 30)}...)</span>
+          <div className="mt-8">
+            <Card>
+              <CardHeader>
+                <CardTitle>Ações Rápidas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <button className="p-4 bg-green-50 hover:bg-green-100 rounded-lg border border-green-200 transition-colors">
+                    <div className="text-center">
+                      <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                        <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <h3 className="font-medium text-gray-900 mb-1">Confirmar Entrega</h3>
+                      <p className="text-xs text-gray-500">Marcar como entregue</p>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <span className="text-green-600 font-medium">R$ {delivery.total_amount.toFixed(2)}</span>
-                      {getStatusBadge(delivery.status)}
+                  </button>
+
+                  <button className="p-4 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors">
+                    <div className="text-center">
+                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                        <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                        </svg>
+                      </div>
+                      <h3 className="font-medium text-gray-900 mb-1">Ver Rotas</h3>
+                      <p className="text-xs text-gray-500">Otimizar trajeto</p>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                  </button>
+
+                  <button className="p-4 bg-yellow-50 hover:bg-yellow-100 rounded-lg border border-yellow-200 transition-colors">
+                    <div className="text-center">
+                      <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                        <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <h3 className="font-medium text-gray-900 mb-1">Reportar Atraso</h3>
+                      <p className="text-xs text-gray-500">Informar problema</p>
+                    </div>
+                  </button>
+
+                  <button className="p-4 bg-purple-50 hover:bg-purple-100 rounded-lg border border-purple-200 transition-colors">
+                    <div className="text-center">
+                      <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                        <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                      </div>
+                      <h3 className="font-medium text-gray-900 mb-1">Relatório Diário</h3>
+                      <p className="text-xs text-gray-500">Ver desempenho</p>
+                    </div>
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 };
 

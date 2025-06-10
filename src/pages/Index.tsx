@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import Header from '@/components/Header';
 import MarmitaCard from '@/components/MarmitaCard';
@@ -6,6 +5,8 @@ import Cart from '@/components/Cart';
 import { useCart } from '@/hooks/useCart';
 import { useDatabase } from '@/hooks/useDatabase';
 import { Button } from '@/components/ui/button';
+import { useRoleRedirect } from '@/hooks/useRoleRedirect';
+import { Link } from 'react-router-dom';
 
 const Index = () => {
   const {
@@ -57,17 +58,75 @@ const Index = () => {
   const item3Title = settings?.item3_title || 'Carregando...';
   const item3Description = settings?.item3_description || 'Carregando...';
 
-  if (isLoadingProducts || isLoadingCategories || isLoadingSettings) {
+  const { profile, loading } = useRoleRedirect();
+
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600"></div>
+      </div>
+    );
+  }
+
+  // Se o usuário já está logado, mostrar painel baseado na role
+  if (profile) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando informações do restaurante...</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Bem-vindo(a), {profile.name}!
+          </h1>
+          <p className="text-xl text-gray-600 mb-8">
+            Role: {profile.role} | Empresa: {profile.company_id}
+          </p>
+          
+          <div className="space-y-4">
+            {profile.role === 'admin' && (
+              <Link to="/admin">
+                <Button size="lg" className="bg-orange-600 hover:bg-orange-700">
+                  Acessar Painel Administrativo
+                </Button>
+              </Link>
+            )}
+            
+            {profile.role === 'caixa' && (
+              <Link to="/caixa">
+                <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
+                  Acessar Painel do Caixa
+                </Button>
+              </Link>
+            )}
+            
+            {profile.role === 'garcon' && (
+              <Link to="/garcon">
+                <Button size="lg" className="bg-green-600 hover:bg-green-700">
+                  Acessar Painel do Garçom
+                </Button>
+              </Link>
+            )}
+            
+            {profile.role === 'entregador' && (
+              <Link to="/entregador">
+                <Button size="lg" className="bg-purple-600 hover:bg-purple-700">
+                  Acessar Painel do Entregador
+                </Button>
+              </Link>
+            )}
+            
+            {profile.role === 'cozinha' && (
+              <Link to="/cozinha">
+                <Button size="lg" className="bg-red-600 hover:bg-red-700">
+                  Acessar Painel da Cozinha
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
       </div>
     );
   }
 
+  // Landing page para usuários não logados
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
       <Header 

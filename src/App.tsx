@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AuthLayout from "@/components/auth/AuthLayout";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Admin from "./pages/Admin";
 import Caixa from "./pages/Caixa";
@@ -25,13 +26,47 @@ const App = () => (
         <AuthLayout>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/caixa" element={<Caixa />} />
-            <Route path="/entregador" element={<Entregador />} />
-            <Route path="/cozinha" element={<Cozinha />} />
-            <Route path="/garcon" element={<Garcon />} />
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <Admin />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/caixa" 
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'caixa']}>
+                  <Caixa />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/entregador" 
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'entregador']}>
+                  <Entregador />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/cozinha" 
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'cozinha']}>
+                  <Cozinha />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/garcon" 
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'garcon']}>
+                  <Garcon />
+                </ProtectedRoute>
+              } 
+            />
             <Route path="/auth" element={<RestaurantAuth />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthLayout>

@@ -16,6 +16,7 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          nome: string | null
           updated_at: string | null
         }
         Insert: {
@@ -24,6 +25,7 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          nome?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -32,6 +34,7 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          nome?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -319,47 +322,56 @@ export type Database = {
       products: {
         Row: {
           available: boolean | null
-          category_id: string | null
+          categoria_id: string | null
           company_id: string
           created_at: string | null
-          description: string | null
+          descricao: string | null
           id: string
-          image_url: string | null
+          imagem: string | null
           ingredients: string[] | null
+          local: string | null
           name: string
-          price: number
+          nome: string | null
+          preco: number
+          tamanho: string | null
           updated_at: string | null
         }
         Insert: {
           available?: boolean | null
-          category_id?: string | null
+          categoria_id?: string | null
           company_id: string
           created_at?: string | null
-          description?: string | null
+          descricao?: string | null
           id?: string
-          image_url?: string | null
+          imagem?: string | null
           ingredients?: string[] | null
+          local?: string | null
           name: string
-          price: number
+          nome?: string | null
+          preco: number
+          tamanho?: string | null
           updated_at?: string | null
         }
         Update: {
           available?: boolean | null
-          category_id?: string | null
+          categoria_id?: string | null
           company_id?: string
           created_at?: string | null
-          description?: string | null
+          descricao?: string | null
           id?: string
-          image_url?: string | null
+          imagem?: string | null
           ingredients?: string[] | null
+          local?: string | null
           name?: string
-          price?: number
+          nome?: string | null
+          preco?: number
+          tamanho?: string | null
           updated_at?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "products_category_id_fkey"
-            columns: ["category_id"]
+            columns: ["categoria_id"]
             isOneToOne: false
             referencedRelation: "categories"
             referencedColumns: ["id"]

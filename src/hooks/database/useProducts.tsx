@@ -26,6 +26,7 @@ export const useProducts = () => {
           )
         `)
         .eq('company_id', profile.company_id)
+        .is('deleted_at', null)
         .order('name');
 
       if (error) {
@@ -33,16 +34,7 @@ export const useProducts = () => {
         throw error;
       }
       
-      // Converter dados da base para o formato esperado
-      const normalizedProducts = (data || []).map(product => ({
-        ...product,
-        price: product.preco || 0,
-        description: product.descricao || '',
-        image_url: product.imagem || '',
-        category_id: product.categoria_id || '',
-      })) as Product[];
-      
-      return normalizedProducts;
+      return (data || []) as Product[];
     },
     enabled: !!profile?.company_id,
   });
@@ -61,14 +53,13 @@ export const useProducts = () => {
         throw new Error('Erro: ID da empresa não encontrado. Tente fazer login novamente.');
       }
 
-      // Converter para formato da base de dados
       const dbData = {
         company_id: profile.company_id,
         name: productData.name,
-        preco: productData.price,
-        descricao: productData.description,
-        categoria_id: productData.category_id,
-        imagem: productData.image_url,
+        description: productData.description,
+        price: productData.price,
+        category_id: productData.category_id,
+        image_url: productData.image_url,
         ingredients: productData.ingredients,
         available: productData.available !== false,
       };
@@ -100,6 +91,7 @@ export const useProducts = () => {
         .from('products')
         .update(productData)
         .eq('id', id)
+        .is('deleted_at', null)
         .select()
         .single();
 
@@ -111,9 +103,10 @@ export const useProducts = () => {
 
   const deleteProduct = useAuthenticatedMutation({
     mutationFn: async (id: string) => {
+      // Soft delete - apenas marca como deletado
       const { error } = await supabase
         .from('products')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq('id', id);
 
       if (error) throw error;

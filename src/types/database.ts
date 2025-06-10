@@ -1,5 +1,5 @@
 
-// Tipos temporários para as novas tabelas até o Supabase atualizar os tipos automaticamente
+// Tipos atualizados para as novas tabelas com RLS e soft delete
 export interface Company {
   id: string;
   name: string;
@@ -18,6 +18,7 @@ export interface Profile {
   role: 'admin' | 'caixa' | 'entregador' | 'cozinha' | 'garcon';
   created_at: string;
   updated_at: string;
+  deleted_at?: string;
 }
 
 export interface Category {
@@ -27,6 +28,7 @@ export interface Category {
   description?: string;
   created_at: string;
   updated_at: string;
+  deleted_at?: string;
 }
 
 export interface Product {
@@ -41,15 +43,8 @@ export interface Product {
   available: boolean;
   created_at: string;
   updated_at: string;
+  deleted_at?: string;
   categories?: Category;
-  // Campos da base de dados brasileira
-  categoria_id?: string;
-  preco?: number;
-  descricao?: string;
-  imagem?: string;
-  nome?: string;
-  local?: string;
-  tamanho?: string;
 }
 
 export interface Table {
@@ -77,6 +72,7 @@ export interface Order {
   order_type?: 'local' | 'delivery';
   created_at: string;
   updated_at: string;
+  deleted_at?: string;
   tables?: Table;
   profiles?: Profile;
 }

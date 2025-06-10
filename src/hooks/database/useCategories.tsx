@@ -20,6 +20,7 @@ export const useCategories = () => {
         .from('categories')
         .select('*')
         .eq('company_id', profile.company_id)
+        .is('deleted_at', null)
         .order('name');
 
       if (error) {
@@ -60,6 +61,7 @@ export const useCategories = () => {
         .from('categories')
         .update(categoryData)
         .eq('id', id)
+        .is('deleted_at', null)
         .select()
         .single();
 
@@ -71,9 +73,10 @@ export const useCategories = () => {
 
   const deleteCategory = useAuthenticatedMutation({
     mutationFn: async (id: string) => {
+      // Soft delete - o trigger automaticamente deletará produtos relacionados
       const { error } = await supabase
         .from('categories')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq('id', id);
 
       if (error) throw error;

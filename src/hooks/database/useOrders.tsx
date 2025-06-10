@@ -32,6 +32,7 @@ export const useOrders = () => {
           )
         `)
         .eq('company_id', profile.company_id)
+        .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -51,6 +52,7 @@ export const useOrders = () => {
         .from('orders')
         .select('table_id, order_type')
         .eq('id', id)
+        .is('deleted_at', null)
         .single();
 
       if (orderError) {
@@ -62,6 +64,7 @@ export const useOrders = () => {
         .from('orders')
         .update({ status })
         .eq('id', id)
+        .is('deleted_at', null)
         .select()
         .single();
 
@@ -110,6 +113,7 @@ export const useOrders = () => {
         .from('orders')
         .select('table_id, order_type, status, notes, total_amount')
         .eq('id', orderId)
+        .is('deleted_at', null)
         .single();
 
       if (orderError) {
@@ -142,6 +146,7 @@ export const useOrders = () => {
           notes: (orderData.notes || '') + paymentNote
         })
         .eq('id', orderId)
+        .is('deleted_at', null)
         .select()
         .single();
 

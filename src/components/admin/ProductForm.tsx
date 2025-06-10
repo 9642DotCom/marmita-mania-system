@@ -151,6 +151,7 @@ const ProductForm = ({ isOpen, onClose, product }: ProductFormProps) => {
                   id="price"
                   type="number"
                   step="0.01"
+                  min="0"
                   value={formData.price}
                   onChange={(e) => setFormData({...formData, price: e.target.value})}
                   placeholder="0.00"

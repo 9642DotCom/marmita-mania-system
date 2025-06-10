@@ -13,6 +13,7 @@ export type Database = {
         Row: {
           company_id: string
           created_at: string | null
+          deleted_at: string | null
           description: string | null
           id: string
           name: string
@@ -22,6 +23,7 @@ export type Database = {
         Insert: {
           company_id: string
           created_at?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           name: string
@@ -31,6 +33,7 @@ export type Database = {
         Update: {
           company_id?: string
           created_at?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           name?: string
@@ -263,6 +266,7 @@ export type Database = {
           customer_address: string | null
           customer_name: string | null
           customer_phone: string | null
+          deleted_at: string | null
           id: string
           notes: string | null
           order_type: string | null
@@ -278,6 +282,7 @@ export type Database = {
           customer_address?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          deleted_at?: string | null
           id?: string
           notes?: string | null
           order_type?: string | null
@@ -293,6 +298,7 @@ export type Database = {
           customer_address?: string | null
           customer_name?: string | null
           customer_phone?: string | null
+          deleted_at?: string | null
           id?: string
           notes?: string | null
           order_type?: string | null
@@ -322,56 +328,50 @@ export type Database = {
       products: {
         Row: {
           available: boolean | null
-          categoria_id: string | null
+          category_id: string | null
           company_id: string
           created_at: string | null
-          descricao: string | null
+          deleted_at: string | null
+          description: string | null
           id: string
-          imagem: string | null
+          image_url: string | null
           ingredients: string[] | null
-          local: string | null
           name: string
-          nome: string | null
-          preco: number
-          tamanho: string | null
+          price: number
           updated_at: string | null
         }
         Insert: {
           available?: boolean | null
-          categoria_id?: string | null
+          category_id?: string | null
           company_id: string
           created_at?: string | null
-          descricao?: string | null
+          deleted_at?: string | null
+          description?: string | null
           id?: string
-          imagem?: string | null
+          image_url?: string | null
           ingredients?: string[] | null
-          local?: string | null
           name: string
-          nome?: string | null
-          preco: number
-          tamanho?: string | null
+          price?: number
           updated_at?: string | null
         }
         Update: {
           available?: boolean | null
-          categoria_id?: string | null
+          category_id?: string | null
           company_id?: string
           created_at?: string | null
-          descricao?: string | null
+          deleted_at?: string | null
+          description?: string | null
           id?: string
-          imagem?: string | null
+          image_url?: string | null
           ingredients?: string[] | null
-          local?: string | null
           name?: string
-          nome?: string | null
-          preco?: number
-          tamanho?: string | null
+          price?: number
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "products_category_id_fkey"
-            columns: ["categoria_id"]
+            foreignKeyName: "products_category_id_fkey1"
+            columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
             referencedColumns: ["id"]
@@ -389,6 +389,7 @@ export type Database = {
         Row: {
           company_id: string
           created_at: string | null
+          deleted_at: string | null
           email: string
           id: string
           name: string
@@ -398,6 +399,7 @@ export type Database = {
         Insert: {
           company_id: string
           created_at?: string | null
+          deleted_at?: string | null
           email: string
           id: string
           name: string
@@ -407,6 +409,7 @@ export type Database = {
         Update: {
           company_id?: string
           created_at?: string | null
+          deleted_at?: string | null
           email?: string
           id?: string
           name?: string
@@ -748,7 +751,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_current_user_company_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      restore_soft_deleted: {
+        Args: { table_name: string; record_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       order_status:

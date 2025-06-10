@@ -19,6 +19,7 @@ export const useUsers = () => {
         .from('profiles')
         .select('*')
         .eq('company_id', profile.company_id)
+        .is('deleted_at', null)
         .order('name');
 
       if (error) {
@@ -43,7 +44,6 @@ export const useUsers = () => {
 
       console.log('Criando usuário no Auth e Profile:', userData.email);
 
-      // Primeiro, criar o usuário no sistema de autenticação
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
@@ -67,7 +67,6 @@ export const useUsers = () => {
 
       console.log('Usuário criado no Auth:', authData.user.id);
 
-      // Criar ou atualizar o perfil na tabela profiles
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .upsert([
@@ -84,7 +83,6 @@ export const useUsers = () => {
 
       if (profileError) {
         console.error('Erro ao criar perfil:', profileError);
-        // Se falhar ao criar o perfil, ainda retornamos sucesso pois o usuário foi criado no Auth
         console.log('Perfil não foi criado, mas usuário existe no Auth');
       } else {
         console.log('Perfil criado com sucesso:', profileData);
@@ -114,6 +112,7 @@ export const useUsers = () => {
         .from('profiles')
         .update(userData)
         .eq('id', id)
+        .is('deleted_at', null)
         .select()
         .single();
 
@@ -125,9 +124,10 @@ export const useUsers = () => {
 
   const deleteUser = useAuthenticatedMutation({
     mutationFn: async (id: string) => {
+      // Soft delete - apenas marca como deletado
       const { error } = await supabase
         .from('profiles')
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq('id', id);
 
       if (error) throw error;

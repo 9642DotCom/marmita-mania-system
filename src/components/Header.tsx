@@ -72,18 +72,16 @@ const Header = ({ cartItemCount, onCartClick, restaurantName, restaurantSlogan, 
           <div className="flex items-center gap-4">
             {/* Informações do usuário logado */}
             {user && profile && (
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-lg">
-                  <User className="h-4 w-4" />
-                  <div className="text-right">
-                    <p className="text-sm font-medium">{profile.name}</p>
-                    <Badge 
-                      className={`text-xs ${getRoleColor(profile.role)} text-white border-none`}
-                      variant="secondary"
-                    >
-                      {getRoleDisplayName(profile.role)}
-                    </Badge>
-                  </div>
+              <div className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-lg">
+                <User className="h-4 w-4" />
+                <div className="text-right">
+                  <p className="text-sm font-medium">{profile.name}</p>
+                  <Badge 
+                    className={`text-xs ${getRoleColor(profile.role)} text-white border-none`}
+                    variant="secondary"
+                  >
+                    {getRoleDisplayName(profile.role)}
+                  </Badge>
                 </div>
               </div>
             )}

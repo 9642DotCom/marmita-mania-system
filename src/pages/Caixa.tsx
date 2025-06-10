@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,7 +22,7 @@ const Caixa = () => {
 
   const handleUpdateStatus = async (orderId: string, status: 'pendente' | 'preparando' | 'saiu_entrega' | 'entregue' | 'cancelado') => {
     try {
-      await updateOrderStatus.mutateAsync({ orderId, status });
+      await updateOrderStatus.mutateAsync({ id: orderId, status });
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
     }

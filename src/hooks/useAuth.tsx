@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -142,7 +141,15 @@ export const useAuth = () => {
 
       if (profileData) {
         console.log('Perfil carregado:', profileData);
-        setProfile(profileData);
+        // Garantir que o role seja um dos tipos válidos
+        const validRole = ['admin', 'caixa', 'entregador', 'cozinha', 'garcon'].includes(profileData.role) 
+          ? profileData.role as Profile['role']
+          : 'admin' as const;
+        
+        setProfile({
+          ...profileData,
+          role: validRole
+        });
       } else {
         console.log('Perfil não encontrado, criando perfil padrão...');
         await createDefaultProfile();

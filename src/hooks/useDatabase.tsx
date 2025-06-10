@@ -114,7 +114,7 @@ export const useDatabase = () => {
         // Converter dados da base para o formato esperado
         const normalizedProducts = (data || []).map(product => ({
           ...product,
-          price: product.preco || product.price || 0,
+          price: product.preco || 0,
           description: product.descricao || product.description,
           image_url: product.imagem || product.image_url,
           category_id: product.categoria_id || product.category_id,

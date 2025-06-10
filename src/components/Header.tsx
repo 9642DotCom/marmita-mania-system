@@ -25,6 +25,30 @@ const Header = ({ cartItemCount, onCartClick, restaurantName, restaurantSlogan, 
     }
   };
 
+  const handleUserClick = () => {
+    if (!profile) return;
+    
+    switch (profile.role) {
+      case 'admin':
+        navigate('/admin');
+        break;
+      case 'caixa':
+        navigate('/caixa');
+        break;
+      case 'garcon':
+        navigate('/garcon');
+        break;
+      case 'entregador':
+        navigate('/entregador');
+        break;
+      case 'cozinha':
+        navigate('/cozinha');
+        break;
+      default:
+        break;
+    }
+  };
+
   const getRoleDisplayName = (role: string) => {
     const roleNames = {
       'admin': 'Administrador',
@@ -72,7 +96,11 @@ const Header = ({ cartItemCount, onCartClick, restaurantName, restaurantSlogan, 
           <div className="flex items-center gap-4">
             {/* Informações do usuário logado */}
             {user && profile && (
-              <div className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-lg">
+              <div 
+                className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-lg cursor-pointer hover:bg-white/20 transition-colors"
+                onClick={handleUserClick}
+                title="Clique para ir para sua área"
+              >
                 <User className="h-4 w-4" />
                 <div className="text-right">
                   <p className="text-sm font-medium">{profile.name}</p>

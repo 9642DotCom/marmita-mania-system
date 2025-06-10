@@ -42,6 +42,14 @@ export interface Product {
   created_at: string;
   updated_at: string;
   categories?: Category;
+  // Campos da base de dados brasileira
+  categoria_id?: string;
+  preco?: number;
+  descricao?: string;
+  imagem?: string;
+  nome?: string;
+  local?: string;
+  tamanho?: string;
 }
 
 export interface Table {

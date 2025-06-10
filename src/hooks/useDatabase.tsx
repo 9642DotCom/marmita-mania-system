@@ -110,7 +110,17 @@ export const useDatabase = () => {
           console.error('Error fetching products:', error);
           throw error;
         }
-        return (data || []) as Product[];
+        
+        // Converter dados da base para o formato esperado
+        const normalizedProducts = (data || []).map(product => ({
+          ...product,
+          price: product.preco || product.price || 0,
+          description: product.descricao || product.description,
+          image_url: product.imagem || product.image_url,
+          category_id: product.categoria_id || product.category_id,
+        })) as Product[];
+        
+        return normalizedProducts;
       },
       enabled: !!profile?.company_id,
     });
@@ -130,14 +140,21 @@ export const useDatabase = () => {
         throw new Error('Erro: ID da empresa não encontrado. Tente fazer login novamente.');
       }
 
+      // Converter para formato da base de dados
+      const dbData = {
+        company_id: profile.company_id,
+        name: productData.name,
+        preco: productData.price,
+        descricao: productData.description,
+        categoria_id: productData.category_id,
+        imagem: productData.image_url,
+        ingredients: productData.ingredients,
+        available: productData.available !== false,
+      };
+
       const { data, error } = await supabase
         .from('products')
-        .insert([
-          {
-            ...productData,
-            company_id: profile.company_id,
-          }
-        ])
+        .insert([dbData])
         .select()
         .single();
 

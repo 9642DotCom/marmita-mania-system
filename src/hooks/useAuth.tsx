@@ -100,7 +100,7 @@ export const useAuth = () => {
         company_id: companyId,
         name: 'Admin Temporário',
         email: 'admin@temp.com',
-        role: 'admin',
+        role: 'admin' as const,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -113,10 +113,10 @@ export const useAuth = () => {
       // Fallback: criar perfil básico mesmo sem empresa
       const fallbackProfile: Profile = {
         id: 'temp-admin-id',
-        company_id: crypto.randomUUID(), // Gerar UUID válido
+        company_id: crypto.randomUUID(),
         name: 'Admin Temporário',
         email: 'admin@temp.com',
-        role: 'admin',
+        role: 'admin' as const,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -150,6 +150,89 @@ export const useAuth = () => {
     } catch (error) {
       console.error('Erro ao carregar perfil do usuário:', error);
       await createDefaultProfile();
+    }
+  };
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error: any) {
+      console.error('Erro no login:', error);
+      return { data: null, error };
+    }
+  };
+
+  const signUp = async (email: string, password: string, metadata?: {
+    ownerName: string;
+    restaurantName: string;
+    phone?: string;
+    address?: string;
+  }) => {
+    try {
+      // Primeiro criar a empresa
+      let companyId = null;
+      if (metadata) {
+        const { data: companyData, error: companyError } = await supabase
+          .from('companies')
+          .insert([{
+            name: metadata.restaurantName,
+            email: email,
+            phone: metadata.phone || null,
+            address: metadata.address || null
+          }])
+          .select()
+          .single();
+
+        if (companyError) {
+          console.error('Erro ao criar empresa:', companyError);
+          throw companyError;
+        }
+
+        companyId = companyData.id;
+      }
+
+      // Depois criar o usuário
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: metadata?.ownerName || 'Novo Usuário',
+            role: 'admin',
+            company_id: companyId
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      // Criar perfil se o usuário foi criado com sucesso
+      if (data.user && companyId) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([{
+            id: data.user.id,
+            company_id: companyId,
+            name: metadata?.ownerName || 'Novo Usuário',
+            email: email,
+            role: 'admin'
+          }]);
+
+        if (profileError) {
+          console.error('Erro ao criar perfil:', profileError);
+        }
+      }
+
+      return { data, error: null };
+    } catch (error: any) {
+      console.error('Erro no cadastro:', error);
+      return { data: null, error };
     }
   };
 
@@ -228,6 +311,8 @@ export const useAuth = () => {
     user,
     profile,
     loading,
+    signIn,
+    signUp,
     signOut,
     refreshTokenIfNeeded,
   };

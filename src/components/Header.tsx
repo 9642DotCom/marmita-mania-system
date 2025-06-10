@@ -1,5 +1,5 @@
 
-import { ShoppingCart, Utensils, LogOut, LogIn } from 'lucide-react';
+import { ShoppingCart, Utensils, LogOut, LogIn, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
@@ -14,7 +14,7 @@ interface HeaderProps {
 }
 
 const Header = ({ cartItemCount, onCartClick, restaurantName, restaurantSlogan, logoUrl }: HeaderProps) => {
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
 
   const handleAuthAction = () => {
@@ -23,6 +23,28 @@ const Header = ({ cartItemCount, onCartClick, restaurantName, restaurantSlogan, 
     } else {
       navigate('/auth');
     }
+  };
+
+  const getRoleDisplayName = (role: string) => {
+    const roleNames = {
+      'admin': 'Administrador',
+      'caixa': 'Caixa',
+      'garcon': 'Garçom',
+      'entregador': 'Entregador',
+      'cozinha': 'Cozinha'
+    };
+    return roleNames[role as keyof typeof roleNames] || role;
+  };
+
+  const getRoleColor = (role: string) => {
+    const roleColors = {
+      'admin': 'bg-red-500',
+      'caixa': 'bg-blue-500',
+      'garcon': 'bg-green-500',
+      'entregador': 'bg-yellow-500',
+      'cozinha': 'bg-purple-500'
+    };
+    return roleColors[role as keyof typeof roleColors] || 'bg-gray-500';
   };
 
   return (
@@ -48,6 +70,24 @@ const Header = ({ cartItemCount, onCartClick, restaurantName, restaurantSlogan, 
           </div>
           
           <div className="flex items-center gap-4">
+            {/* Informações do usuário logado */}
+            {user && profile && (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-lg">
+                  <User className="h-4 w-4" />
+                  <div className="text-right">
+                    <p className="text-sm font-medium">{profile.name}</p>
+                    <Badge 
+                      className={`text-xs ${getRoleColor(profile.role)} text-white border-none`}
+                      variant="secondary"
+                    >
+                      {getRoleDisplayName(profile.role)}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <Button
               onClick={onCartClick}
               variant="secondary"

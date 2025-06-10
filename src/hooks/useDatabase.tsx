@@ -1,3 +1,4 @@
+
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -115,9 +116,9 @@ export const useDatabase = () => {
         const normalizedProducts = (data || []).map(product => ({
           ...product,
           price: product.preco || 0,
-          description: product.descricao || product.description,
-          image_url: product.imagem || product.image_url,
-          category_id: product.categoria_id || product.category_id,
+          description: product.descricao || '',
+          image_url: product.imagem || '',
+          category_id: product.categoria_id || '',
         })) as Product[];
         
         return normalizedProducts;

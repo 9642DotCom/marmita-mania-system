@@ -13,6 +13,7 @@ import Entregador from "./pages/Entregador";
 import Cozinha from "./pages/Cozinha";
 import Garcon from "./pages/Garcon";
 import RestaurantAuth from "./pages/RestaurantAuth";
+import SignUp from "./pages/SignUp";
 import SalesPage from "./pages/SalesPage";
 import NotFound from "./pages/NotFound";
 
@@ -27,6 +28,9 @@ const App = () => (
         <Routes>
           {/* Página de vendas sem AuthLayout para ser pública */}
           <Route path="/vendas" element={<SalesPage />} />
+          
+          {/* Página de cadastro sem AuthLayout para ser pública */}
+          <Route path="/signup" element={<SignUp />} />
           
           <Route path="/*" element={
             <AuthLayout>

@@ -5,6 +5,10 @@ import { CheckCircle, QrCode, Users, Truck, ChefHat, BarChart3, Clock, TrendingU
 import { Link } from 'react-router-dom';
 
 const SalesPage = () => {
+  const whatsappNumber = "5566992504569";
+  const whatsappMessage = "Olá! Gostaria de conhecer melhor o sistema RestaurantePro e solicitar uma demonstração.";
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+
   const features = [
     {
       icon: <QrCode className="w-12 h-12 text-orange-600" />,
@@ -89,11 +93,11 @@ const SalesPage = () => {
                 Login
               </Button>
             </Link>
-            <Link to="/auth">
+            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
               <Button className="bg-white text-orange-600 hover:bg-gray-100">
-                Teste Grátis
+                Falar com Consultor
               </Button>
-            </Link>
+            </a>
           </div>
         </div>
       </header>
@@ -108,14 +112,16 @@ const SalesPage = () => {
             Sistema completo de gestão que <strong>acelera pedidos</strong>, <strong>aumenta vendas</strong> e <strong>fideliza clientes</strong> com tecnologia QR Code
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Link to="/auth">
+            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
               <Button size="lg" className="bg-orange-600 hover:bg-orange-700 text-lg px-8 py-4">
-                🚀 Começar Teste Grátis
+                🚀 Falar com Consultor
               </Button>
-            </Link>
-            <Button variant="outline" size="lg" className="text-lg px-8 py-4">
-              📺 Ver Demonstração
-            </Button>
+            </a>
+            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" size="lg" className="text-lg px-8 py-4">
+                📺 Ver Demonstração
+              </Button>
+            </a>
           </div>
           
           {/* Stats */}
@@ -322,14 +328,16 @@ const SalesPage = () => {
             Junte-se a centenas de restaurantes que já aumentaram suas vendas e melhoraram a experiência dos clientes
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/auth">
+            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
               <Button size="lg" className="bg-white text-orange-600 hover:bg-gray-100 text-lg px-8 py-4">
-                🚀 Teste Grátis por 30 Dias
+                🚀 Falar com Consultor
               </Button>
-            </Link>
-            <Button variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-orange-600 text-lg px-8 py-4">
-                📞 Falar com Consultor
-            </Button>
+            </a>
+            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-orange-600 text-lg px-8 py-4">
+                📞 Solicitar Demonstração
+              </Button>
+            </a>
           </div>
           
           <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
@@ -357,10 +365,10 @@ const SalesPage = () => {
         <div className="container mx-auto px-4 text-center">
           <h4 className="text-2xl font-bold mb-4">RestaurantePro</h4>
           <p className="text-gray-400 mb-8">O futuro da gestão de restaurantes está aqui</p>
-          <div className="flex justify-center space-x-8 text-sm text-gray-400">
-            <span>📧 contato@restaurantepro.com</span>
-            <span>📞 (11) 9999-9999</span>
-            <span>📍 São Paulo, SP</span>
+          <div className="flex justify-center">
+            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="text-green-400 hover:text-green-300">
+              📱 WhatsApp: (66) 99250-4569
+            </a>
           </div>
         </div>
       </footer>

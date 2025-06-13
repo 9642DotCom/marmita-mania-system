@@ -9,6 +9,80 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      catalogo_categorias: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: number
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: never
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: never
+          nome?: string
+        }
+        Relationships: []
+      }
+      catalogo_itens: {
+        Row: {
+          categoria_id: number | null
+          created_at: string
+          descricao: string | null
+          detalhes: Json | null
+          disponivel: boolean | null
+          id: number
+          imagem: string | null
+          imagem_base64: string | null
+          nome: string
+          preco: number | null
+          preco_promocional: number | null
+          updated_at: string
+        }
+        Insert: {
+          categoria_id?: number | null
+          created_at?: string
+          descricao?: string | null
+          detalhes?: Json | null
+          disponivel?: boolean | null
+          id?: never
+          imagem?: string | null
+          imagem_base64?: string | null
+          nome: string
+          preco?: number | null
+          preco_promocional?: number | null
+          updated_at?: string
+        }
+        Update: {
+          categoria_id?: number | null
+          created_at?: string
+          descricao?: string | null
+          detalhes?: Json | null
+          disponivel?: boolean | null
+          id?: never
+          imagem?: string | null
+          imagem_base64?: string | null
+          nome?: string
+          preco?: number | null
+          preco_promocional?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalogo_itens_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "catalogo_categorias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           company_id: string

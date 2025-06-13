@@ -13,6 +13,7 @@ import Entregador from "./pages/Entregador";
 import Cozinha from "./pages/Cozinha";
 import Garcon from "./pages/Garcon";
 import RestaurantAuth from "./pages/RestaurantAuth";
+import SalesPage from "./pages/SalesPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,53 +24,60 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AuthLayout>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route 
-              path="/admin" 
-              element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <Admin />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/caixa" 
-              element={
-                <ProtectedRoute allowedRoles={['admin', 'caixa']}>
-                  <Caixa />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/entregador" 
-              element={
-                <ProtectedRoute allowedRoles={['admin', 'entregador']}>
-                  <Entregador />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/cozinha" 
-              element={
-                <ProtectedRoute allowedRoles={['admin', 'cozinha']}>
-                  <Cozinha />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/garcon" 
-              element={
-                <ProtectedRoute allowedRoles={['admin', 'garcon']}>
-                  <Garcon />
-                </ProtectedRoute>
-              } 
-            />
-            <Route path="/auth" element={<RestaurantAuth />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthLayout>
+        <Routes>
+          {/* Página de vendas sem AuthLayout para ser pública */}
+          <Route path="/vendas" element={<SalesPage />} />
+          
+          <Route path="/*" element={
+            <AuthLayout>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route 
+                  path="/admin" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <Admin />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/caixa" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin', 'caixa']}>
+                      <Caixa />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/entregador" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin', 'entregador']}>
+                      <Entregador />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/cozinha" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin', 'cozinha']}>
+                      <Cozinha />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/garcon" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin', 'garcon']}>
+                      <Garcon />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route path="/auth" element={<RestaurantAuth />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </AuthLayout>
+          } />
+        </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

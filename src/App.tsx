@@ -26,61 +26,76 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* Página de vendas sem AuthLayout para ser pública */}
-          <Route path="/vendas" element={<SalesPage />} />
+          {/* Página de vendas como página inicial */}
+          <Route path="/" element={<SalesPage />} />
           
           {/* Página de cadastro sem AuthLayout para ser pública */}
           <Route path="/signup" element={<SignUp />} />
           
-          <Route path="/*" element={
+          {/* Rotas protegidas com AuthLayout */}
+          <Route path="/app" element={
             <AuthLayout>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route 
-                  path="/admin" 
-                  element={
-                    <ProtectedRoute allowedRoles={['admin']}>
-                      <Admin />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/caixa" 
-                  element={
-                    <ProtectedRoute allowedRoles={['admin', 'caixa']}>
-                      <Caixa />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/entregador" 
-                  element={
-                    <ProtectedRoute allowedRoles={['admin', 'entregador']}>
-                      <Entregador />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/cozinha" 
-                  element={
-                    <ProtectedRoute allowedRoles={['admin', 'cozinha']}>
-                      <Cozinha />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="/garcon" 
-                  element={
-                    <ProtectedRoute allowedRoles={['admin', 'garcon']}>
-                      <Garcon />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route path="/auth" element={<RestaurantAuth />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <Index />
             </AuthLayout>
           } />
+          
+          <Route 
+            path="/admin" 
+            element={
+              <AuthLayout>
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <Admin />
+                </ProtectedRoute>
+              </AuthLayout>
+            } 
+          />
+          
+          <Route 
+            path="/caixa" 
+            element={
+              <AuthLayout>
+                <ProtectedRoute allowedRoles={['admin', 'caixa']}>
+                  <Caixa />
+                </ProtectedRoute>
+              </AuthLayout>
+            } 
+          />
+          
+          <Route 
+            path="/entregador" 
+            element={
+              <AuthLayout>
+                <ProtectedRoute allowedRoles={['admin', 'entregador']}>
+                  <Entregador />
+                </ProtectedRoute>
+              </AuthLayout>
+            } 
+          />
+          
+          <Route 
+            path="/cozinha" 
+            element={
+              <AuthLayout>
+                <ProtectedRoute allowedRoles={['admin', 'cozinha']}>
+                  <Cozinha />
+                </ProtectedRoute>
+              </AuthLayout>
+            } 
+          />
+          
+          <Route 
+            path="/garcon" 
+            element={
+              <AuthLayout>
+                <ProtectedRoute allowedRoles={['admin', 'garcon']}>
+                  <Garcon />
+                </ProtectedRoute>
+              </AuthLayout>
+            } 
+          />
+          
+          <Route path="/auth" element={<RestaurantAuth />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

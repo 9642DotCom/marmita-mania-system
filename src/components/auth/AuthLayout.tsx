@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -15,25 +16,42 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let mounted = true;
+
     // Verificar usuário atual
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      console.log('AuthLayout - Usuário atual:', user?.id);
-      setUser(user);
-      setLoading(false);
-    });
+    const checkUser = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (mounted) {
+          console.log('AuthLayout - Usuário atual:', user?.id);
+          setUser(user);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Erro ao verificar usuário:', error);
+        if (mounted) {
+          setUser(null);
+          setLoading(false);  
+        }
+      }
+    };
+
+    checkUser();
 
     // Escutar mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+        
         console.log('AuthLayout - Auth state changed:', event, session?.user?.id);
         setUser(session?.user ?? null);
         setLoading(false);
         
         // Se o usuário fez login e está na página de auth, redirecionar
         if (event === 'SIGNED_IN' && session?.user && location.pathname === '/auth') {
-          console.log('Usuário logou, verificando perfil para redirecionamento...');
+          console.log('Usuário logou, redirecionando...');
           
-          // Aguardar um pouco para garantir que o perfil foi criado
+          // Aguardar um pouco para garantir que o perfil seja carregado
           setTimeout(async () => {
             try {
               const { data: profileData } = await supabase
@@ -45,12 +63,8 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
               const role = profileData?.role;
               console.log('Role encontrada:', role);
 
-              // Detectar se é admin por email como fallback
-              const email = session.user.email || '';
-              const isAdminByEmail = email.includes('admin') || email.includes('rodrigo') || email === 'rodrigo_nunes.182@hotmail.com';
-
-              if (role === 'admin' || isAdminByEmail) {
-                console.log('Redirecionando para admin');
+              // Redirecionar baseado no role
+              if (role === 'admin') {
                 navigate('/admin', { replace: true });
               } else if (role === 'entregador') {
                 navigate('/entregador', { replace: true });
@@ -61,30 +75,23 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
               } else if (role === 'garcon') {
                 navigate('/garcon', { replace: true });
               } else {
-                // Se não encontrou role específica, verificar se é novo usuário que acabou de criar empresa
-                console.log('Role não encontrada, assumindo admin para novo usuário');
+                // Fallback para admin se não encontrar role
                 navigate('/admin', { replace: true });
               }
             } catch (error) {
               console.error('Erro ao verificar perfil:', error);
-              // Fallback: detectar admin por email ou assumir admin para novos usuários
-              const email = session.user.email || '';
-              const isAdminByEmail = email.includes('admin') || email.includes('rodrigo') || email === 'rodrigo_nunes.182@hotmail.com';
-              
-              if (isAdminByEmail) {
-                navigate('/admin', { replace: true });
-              } else {
-                // Para novos usuários que acabaram de criar conta, assumir admin
-                console.log('Erro ao buscar perfil, assumindo admin para novo usuário');
-                navigate('/admin', { replace: true });
-              }
+              // Fallback para admin em caso de erro
+              navigate('/admin', { replace: true });
             }
-          }, 2000); // Aguardar mais tempo para garantir que o perfil foi criado
+          }, 1000);
         }
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, [location.pathname, navigate]);
 
   if (loading) {

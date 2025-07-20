@@ -1,127 +1,65 @@
+
 import { useEffect, useState } from 'react';
-import { User } from '@supabase/supabase-js';
+import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { Profile } from '@/types/database';
 import { toast } from './use-toast';
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Verificar se já existe uma sessão ativa
-    const getSession = async () => {
+    // Primeiro configurar o listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id);
+      
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (event === 'SIGNED_IN' && session?.user) {
+        // Aguardar um pouco antes de carregar o perfil para evitar deadlocks
+        setTimeout(() => {
+          loadUserProfile(session.user.id);
+        }, 100);
+      } else if (event === 'SIGNED_OUT') {
+        setProfile(null);
+      }
+      
+      setLoading(false);
+    });
+
+    // Depois verificar sessão existente
+    const getInitialSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
           console.error('Erro ao obter sessão:', error);
+          setLoading(false);
           return;
         }
         
         if (session?.user) {
           console.log('Sessão encontrada para usuário:', session.user.id);
+          setSession(session);
           setUser(session.user);
           await loadUserProfile(session.user.id);
-        } else {
-          console.log('Nenhuma sessão ativa encontrada');
-          // Se não há sessão, criar perfil admin temporário para desenvolvimento
-          await createDefaultProfile();
         }
       } catch (error) {
         console.error('Erro no getSession:', error);
-        await createDefaultProfile();
       } finally {
         setLoading(false);
       }
     };
 
-    getSession();
-
-    // Escutar mudanças na autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.id);
-      
-      if (session?.user) {
-        setUser(session.user);
-        await loadUserProfile(session.user.id);
-      } else {
-        setUser(null);
-        setProfile(null);
-        await createDefaultProfile();
-      }
-      setLoading(false);
-    });
+    getInitialSession();
 
     return () => {
       subscription.unsubscribe();
     };
   }, []);
-
-  const createDefaultProfile = async () => {
-    console.log('Nenhum perfil encontrado, criando perfil admin...');
-    
-    try {
-      // Primeiro, verificar se já existe uma empresa padrão
-      const { data: existingCompany } = await supabase
-        .from('companies')
-        .select('id')
-        .limit(1)
-        .single();
-
-      let companyId = existingCompany?.id;
-
-      // Se não existe empresa, criar uma
-      if (!companyId) {
-        const { data: newCompany, error: companyError } = await supabase
-          .from('companies')
-          .insert([{
-            name: 'Empresa Padrão',
-            email: 'admin@empresa.com',
-            phone: '(11) 99999-9999',
-            address: 'Endereço da empresa'
-          }])
-          .select()
-          .single();
-
-        if (companyError) {
-          console.error('Erro ao criar empresa padrão:', companyError);
-          return;
-        }
-
-        companyId = newCompany.id;
-        console.log('Empresa padrão criada:', companyId);
-      }
-
-      // Criar perfil admin temporário
-      const defaultProfile: Profile = {
-        id: 'temp-admin-id',
-        company_id: companyId,
-        name: 'Admin Temporário',
-        email: 'admin@temp.com',
-        role: 'admin' as const,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-
-      setProfile(defaultProfile);
-      console.log('Perfil admin inserido no banco de dados com sucesso');
-
-    } catch (error) {
-      console.error('Erro ao criar perfil padrão:', error);
-      // Fallback: criar perfil básico mesmo sem empresa
-      const fallbackProfile: Profile = {
-        id: 'temp-admin-id',
-        company_id: crypto.randomUUID(),
-        name: 'Admin Temporário',
-        email: 'admin@temp.com',
-        role: 'admin' as const,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      setProfile(fallbackProfile);
-    }
-  };
 
   const loadUserProfile = async (userId: string) => {
     try {
@@ -133,15 +71,20 @@ export const useAuth = () => {
         .eq('id', userId)
         .single();
 
-      if (profileError && profileError.code !== 'PGRST116') {
-        console.error('Erro ao carregar perfil:', profileError);
-        await createDefaultProfile();
+      if (profileError) {
+        if (profileError.code === 'PGRST116') {
+          console.log('Perfil não encontrado para o usuário');
+          setProfile(null);
+        } else {
+          console.error('Erro ao carregar perfil:', profileError);
+          setProfile(null);
+        }
         return;
       }
 
       if (profileData) {
         console.log('Perfil carregado:', profileData);
-        // Garantir que o role seja um dos tipos válidos
+        // Garantir que o role seja válido
         const validRole = ['admin', 'caixa', 'entregador', 'cozinha', 'garcon'].includes(profileData.role) 
           ? profileData.role as Profile['role']
           : 'admin' as const;
@@ -150,13 +93,10 @@ export const useAuth = () => {
           ...profileData,
           role: validRole
         });
-      } else {
-        console.log('Perfil não encontrado, criando perfil padrão...');
-        await createDefaultProfile();
       }
     } catch (error) {
       console.error('Erro ao carregar perfil do usuário:', error);
-      await createDefaultProfile();
+      setProfile(null);
     }
   };
 
@@ -209,6 +149,7 @@ export const useAuth = () => {
         email,
         password,
         options: {
+          emailRedirectTo: `${window.location.origin}/auth`,
           data: {
             name: metadata?.ownerName || 'Novo Usuário',
             role: 'admin',
@@ -243,6 +184,33 @@ export const useAuth = () => {
     }
   };
 
+  const signOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Erro ao fazer logout:', error);
+        toast({
+          title: "Erro ao sair",
+          description: "Ocorreu um erro ao fazer logout. Tente novamente.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      console.log('Logout realizado com sucesso');
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+      
+      toast({
+        title: "Logout realizado",
+        description: "Você foi desconectado com sucesso.",
+      });
+    } catch (error) {
+      console.error('Erro inesperado no logout:', error);
+    }
+  };
+
   const refreshTokenIfNeeded = async (): Promise<boolean> => {
     try {
       const { data: { session }, error } = await supabase.auth.getSession();
@@ -253,8 +221,8 @@ export const useAuth = () => {
       }
 
       if (!session) {
-        console.log('Sem sessão ativa, mantendo perfil temporário');
-        return true; // Retornar true para permitir operações com perfil temporário
+        console.log('Sem sessão ativa');
+        return false;
       }
 
       // Verificar se o token está próximo do vencimento (menos de 5 minutos)
@@ -285,37 +253,9 @@ export const useAuth = () => {
     }
   };
 
-  const signOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('Erro ao fazer logout:', error);
-        toast({
-          title: "Erro ao sair",
-          description: "Ocorreu um erro ao fazer logout. Tente novamente.",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      console.log('Logout realizado com sucesso');
-      setUser(null);
-      setProfile(null);
-      
-      // Recriar perfil temporário após logout
-      await createDefaultProfile();
-      
-      toast({
-        title: "Logout realizado",
-        description: "Você foi desconectado com sucesso.",
-      });
-    } catch (error) {
-      console.error('Erro inesperado no logout:', error);
-    }
-  };
-
   return {
     user,
+    session,
     profile,
     loading,
     signIn,

@@ -16,28 +16,23 @@ export function useAuthenticatedMutation<TData, TError, TVariables>({
   onError,
   queryKey,
 }: UseAuthenticatedMutationOptions<TData, TError, TVariables>) {
-  const { refreshTokenIfNeeded } = useAuth();
+  const { session } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (variables: TVariables) => {
-      // Verificar e renovar token antes da operação
-      const isTokenValid = await refreshTokenIfNeeded();
-      if (!isTokenValid) {
+      // Verificar se há sessão ativa
+      if (!session) {
         throw new Error('Sessão expirada. Faça login novamente.');
       }
 
       try {
         return await mutationFn(variables);
       } catch (error: any) {
-        // Se o erro for de JWT expirado, tentar renovar e repetir
+        // Se o erro for de JWT expirado, mostrar mensagem apropriada
         if (error?.code === 'PGRST301' || error?.message?.includes('JWT expired')) {
-          console.log('Token expirado durante operação, tentando renovar...');
-          const renewed = await refreshTokenIfNeeded();
-          if (renewed) {
-            // Tentar novamente após renovar
-            return await mutationFn(variables);
-          }
+          console.log('Token expirado durante operação');
+          throw new Error('Sessão expirada. Faça login novamente.');
         }
         throw error;
       }
@@ -51,7 +46,7 @@ export function useAuthenticatedMutation<TData, TError, TVariables>({
     onError: (error: any, variables) => {
       console.error('Erro na operação:', error);
       
-      if (error?.code === 'PGRST301' || error?.message?.includes('JWT expired')) {
+      if (error?.message?.includes('Sessão expirada') || error?.code === 'PGRST301' || error?.message?.includes('JWT expired')) {
         toast({
           title: "Sessão expirada",
           description: "Sua sessão expirou. Faça login novamente.",

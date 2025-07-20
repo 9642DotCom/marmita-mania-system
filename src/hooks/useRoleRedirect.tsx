@@ -21,9 +21,13 @@ export const useRoleRedirect = () => {
       const targetRoute = roleRoutes[profile.role];
       const currentPath = window.location.pathname;
       
-      // Só redirecionar se estiver em /app ou na raiz /
-      if (targetRoute && (currentPath === '/app' || currentPath === '/')) {
-        console.log('Redirecionando para:', targetRoute);
+      console.log('useRoleRedirect - Profile role:', profile.role);
+      console.log('useRoleRedirect - Current path:', currentPath);
+      console.log('useRoleRedirect - Target route:', targetRoute);
+      
+      // Redirecionar se estiver em /app
+      if (targetRoute && currentPath === '/app') {
+        console.log('Redirecionando de /app para:', targetRoute);
         navigate(targetRoute, { replace: true });
       }
     }

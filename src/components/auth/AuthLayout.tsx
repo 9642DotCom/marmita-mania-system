@@ -18,7 +18,6 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
   useEffect(() => {
     let mounted = true;
 
-    // Verificar usuário atual
     const checkUser = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -38,7 +37,6 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
 
     checkUser();
 
-    // Escutar mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
@@ -47,42 +45,12 @@ const AuthLayout = ({ children }: AuthLayoutProps) => {
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Se o usuário fez login e está na página de auth, redirecionar
         if (event === 'SIGNED_IN' && session?.user && location.pathname === '/auth') {
-          console.log('Usuário logou, redirecionando...');
+          console.log('Usuário logou, redirecionando para /app...');
           
-          // Aguardar um pouco para garantir que o perfil seja carregado
-          setTimeout(async () => {
-            try {
-              const { data: profileData } = await supabase
-                .from('profiles')
-                .select('role')
-                .eq('id', session.user.id)
-                .single();
-
-              const role = profileData?.role;
-              console.log('Role encontrada:', role);
-
-              // Redirecionar baseado no role
-              if (role === 'admin') {
-                navigate('/admin', { replace: true });
-              } else if (role === 'entregador') {
-                navigate('/entregador', { replace: true });
-              } else if (role === 'caixa') {
-                navigate('/caixa', { replace: true });
-              } else if (role === 'cozinha') {
-                navigate('/cozinha', { replace: true });
-              } else if (role === 'garcon') {
-                navigate('/garcon', { replace: true });
-              } else {
-                // Fallback para admin se não encontrar role
-                navigate('/admin', { replace: true });
-              }
-            } catch (error) {
-              console.error('Erro ao verificar perfil:', error);
-              // Fallback para admin em caso de erro
-              navigate('/admin', { replace: true });
-            }
+          // Aguardar um pouco e redirecionar para /app
+          setTimeout(() => {
+            navigate('/app', { replace: true });
           }, 1000);
         }
       }

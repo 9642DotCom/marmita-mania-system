@@ -19,15 +19,7 @@ export const useRoleRedirect = () => {
   useEffect(() => {
     if (!loading && profile?.role) {
       const targetRoute = roleRoutes[profile.role];
-      const currentPath = window.location.pathname;
-      
-      console.log('useRoleRedirect - Profile role:', profile.role);
-      console.log('useRoleRedirect - Current path:', currentPath);
-      console.log('useRoleRedirect - Target route:', targetRoute);
-      
-      // Redirecionar se estiver em /app
-      if (targetRoute && currentPath === '/app') {
-        console.log('Redirecionando de /app para:', targetRoute);
+      if (targetRoute && window.location.pathname === '/') {
         navigate(targetRoute, { replace: true });
       }
     }

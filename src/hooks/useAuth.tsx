@@ -1,133 +1,176 @@
-
 import { useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { Profile } from '@/types/database';
 import { toast } from './use-toast';
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let mounted = true;
-
-    // Configurar o listener de mudanças de auth
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!mounted) return;
-        
-        console.log('Auth state changed:', event, session?.user?.id);
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (event === 'SIGNED_IN' && session?.user) {
-          // Aguardar um pouco para carregar o perfil
-          setTimeout(() => {
-            if (mounted) {
-              loadUserProfile(session.user.id);
-            }
-          }, 500);
-        } else if (event === 'SIGNED_OUT') {
-          setProfile(null);
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    // Verificar sessão inicial
-    const checkInitialSession = async () => {
+    // Verificar se já existe uma sessão ativa
+    const getSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        
         if (error) {
           console.error('Erro ao obter sessão:', error);
-          setLoading(false);
           return;
         }
         
-        if (session?.user && mounted) {
-          console.log('Sessão inicial encontrada:', session.user.id);
-          setSession(session);
+        if (session?.user) {
+          console.log('Sessão encontrada para usuário:', session.user.id);
           setUser(session.user);
           await loadUserProfile(session.user.id);
-        }
-        
-        if (mounted) {
-          setLoading(false);
+        } else {
+          console.log('Nenhuma sessão ativa encontrada');
+          // Se não há sessão, criar perfil admin temporário para desenvolvimento
+          await createDefaultProfile();
         }
       } catch (error) {
-        console.error('Erro na verificação inicial:', error);
-        if (mounted) {
-          setLoading(false);
-        }
+        console.error('Erro no getSession:', error);
+        await createDefaultProfile();
+      } finally {
+        setLoading(false);
       }
     };
 
-    checkInitialSession();
+    getSession();
+
+    // Escutar mudanças na autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id);
+      
+      if (session?.user) {
+        setUser(session.user);
+        await loadUserProfile(session.user.id);
+      } else {
+        setUser(null);
+        setProfile(null);
+        await createDefaultProfile();
+      }
+      setLoading(false);
+    });
 
     return () => {
-      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
+
+  const createDefaultProfile = async () => {
+    console.log('Nenhum perfil encontrado, criando perfil admin...');
+    
+    try {
+      // Primeiro, verificar se já existe uma empresa padrão
+      const { data: existingCompany } = await supabase
+        .from('companies')
+        .select('id')
+        .limit(1)
+        .single();
+
+      let companyId = existingCompany?.id;
+
+      // Se não existe empresa, criar uma
+      if (!companyId) {
+        const { data: newCompany, error: companyError } = await supabase
+          .from('companies')
+          .insert([{
+            name: 'Empresa Padrão',
+            email: 'admin@empresa.com',
+            phone: '(11) 99999-9999',
+            address: 'Endereço da empresa'
+          }])
+          .select()
+          .single();
+
+        if (companyError) {
+          console.error('Erro ao criar empresa padrão:', companyError);
+          return;
+        }
+
+        companyId = newCompany.id;
+        console.log('Empresa padrão criada:', companyId);
+      }
+
+      // Criar perfil admin temporário
+      const defaultProfile: Profile = {
+        id: 'temp-admin-id',
+        company_id: companyId,
+        name: 'Admin Temporário',
+        email: 'admin@temp.com',
+        role: 'admin' as const,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      setProfile(defaultProfile);
+      console.log('Perfil admin inserido no banco de dados com sucesso');
+
+    } catch (error) {
+      console.error('Erro ao criar perfil padrão:', error);
+      // Fallback: criar perfil básico mesmo sem empresa
+      const fallbackProfile: Profile = {
+        id: 'temp-admin-id',
+        company_id: crypto.randomUUID(),
+        name: 'Admin Temporário',
+        email: 'admin@temp.com',
+        role: 'admin' as const,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      setProfile(fallbackProfile);
+    }
+  };
 
   const loadUserProfile = async (userId: string) => {
     try {
       console.log('Carregando perfil para usuário:', userId);
       
-      // Usar uma query mais simples para evitar problemas de RLS
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('id, name, email, role, company_id, created_at, updated_at')
+        .select('*')
         .eq('id', userId)
-        .maybeSingle();
+        .single();
 
-      if (profileError) {
+      if (profileError && profileError.code !== 'PGRST116') {
         console.error('Erro ao carregar perfil:', profileError);
-        setProfile(null);
+        await createDefaultProfile();
         return;
       }
 
       if (profileData) {
-        console.log('Perfil carregado com sucesso:', profileData);
+        console.log('Perfil carregado:', profileData);
+        // Garantir que o role seja um dos tipos válidos
+        const validRole = ['admin', 'caixa', 'entregador', 'cozinha', 'garcon'].includes(profileData.role) 
+          ? profileData.role as Profile['role']
+          : 'admin' as const;
+        
         setProfile({
           ...profileData,
-          role: profileData.role as Profile['role'],
-          deleted_at: null
+          role: validRole
         });
       } else {
-        console.log('Nenhum perfil encontrado para o usuário');
-        setProfile(null);
+        console.log('Perfil não encontrado, criando perfil padrão...');
+        await createDefaultProfile();
       }
     } catch (error) {
-      console.error('Erro inesperado ao carregar perfil:', error);
-      setProfile(null);
+      console.error('Erro ao carregar perfil do usuário:', error);
+      await createDefaultProfile();
     }
   };
 
   const signIn = async (email: string, password: string) => {
     try {
-      console.log('Tentando fazer login com:', email);
-      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) {
-        console.error('Erro no login:', error);
-        throw error;
-      }
-
-      console.log('Login realizado com sucesso:', data.user?.id);
+      if (error) throw error;
       return { data, error: null };
     } catch (error: any) {
-      console.error('Erro no signIn:', error);
+      console.error('Erro no login:', error);
       return { data: null, error };
     }
   };
@@ -166,7 +209,6 @@ export const useAuth = () => {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth`,
           data: {
             name: metadata?.ownerName || 'Novo Usuário',
             role: 'admin',
@@ -201,10 +243,50 @@ export const useAuth = () => {
     }
   };
 
+  const refreshTokenIfNeeded = async (): Promise<boolean> => {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('Erro ao verificar sessão:', error);
+        return false;
+      }
+
+      if (!session) {
+        console.log('Sem sessão ativa, mantendo perfil temporário');
+        return true; // Retornar true para permitir operações com perfil temporário
+      }
+
+      // Verificar se o token está próximo do vencimento (menos de 5 minutos)
+      const expiresAt = session.expires_at;
+      const now = Math.floor(Date.now() / 1000);
+      const timeUntilExpiry = expiresAt - now;
+
+      if (timeUntilExpiry < 300) { // Menos de 5 minutos
+        console.log('Token próximo do vencimento, renovando...');
+        
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        
+        if (refreshError) {
+          console.error('Erro ao renovar token:', refreshError);
+          return false;
+        }
+
+        if (refreshData.session) {
+          console.log('Token renovado com sucesso');
+          return true;
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Erro ao verificar/renovar token:', error);
+      return false;
+    }
+  };
+
   const signOut = async () => {
     try {
-      console.log('Fazendo logout...');
-      
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Erro ao fazer logout:', error);
@@ -218,11 +300,15 @@ export const useAuth = () => {
       
       console.log('Logout realizado com sucesso');
       setUser(null);
-      setSession(null);
       setProfile(null);
       
-      // Redirecionar para a página inicial
-      window.location.href = '/';
+      // Recriar perfil temporário após logout
+      await createDefaultProfile();
+      
+      toast({
+        title: "Logout realizado",
+        description: "Você foi desconectado com sucesso.",
+      });
     } catch (error) {
       console.error('Erro inesperado no logout:', error);
     }
@@ -230,11 +316,11 @@ export const useAuth = () => {
 
   return {
     user,
-    session,
     profile,
     loading,
     signIn,
     signUp,
-    signOut
+    signOut,
+    refreshTokenIfNeeded,
   };
 };

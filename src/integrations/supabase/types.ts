@@ -7,8 +7,153 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)"
+  }
   public: {
     Tables: {
+      animals: {
+        Row: {
+          acquisitionDate: string
+          acquisitionValue: number
+          age: number
+          breed: string
+          created_at: string
+          id: string
+          origin: string
+          saleId: string | null
+          sellerId: string | null
+          sex: string
+          species: string
+          status: string
+          tag: string
+          user_id: string
+        }
+        Insert: {
+          acquisitionDate: string
+          acquisitionValue: number
+          age: number
+          breed: string
+          created_at?: string
+          id?: string
+          origin: string
+          saleId?: string | null
+          sellerId?: string | null
+          sex: string
+          species: string
+          status: string
+          tag: string
+          user_id: string
+        }
+        Update: {
+          acquisitionDate?: string
+          acquisitionValue?: number
+          age?: number
+          breed?: string
+          created_at?: string
+          id?: string
+          origin?: string
+          saleId?: string | null
+          sellerId?: string | null
+          sex?: string
+          species?: string
+          status?: string
+          tag?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "animals_saleId_fkey"
+            columns: ["saleId"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "animals_sellerId_fkey"
+            columns: ["sellerId"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      catalogo_categorias: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: number
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: never
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: never
+          nome?: string
+        }
+        Relationships: []
+      }
+      catalogo_itens: {
+        Row: {
+          categoria_id: number | null
+          created_at: string
+          descricao: string | null
+          detalhes: Json | null
+          disponivel: boolean | null
+          id: number
+          imagem: string | null
+          imagem_base64: string | null
+          nome: string
+          preco: number | null
+          preco_promocional: number | null
+          updated_at: string
+        }
+        Insert: {
+          categoria_id?: number | null
+          created_at?: string
+          descricao?: string | null
+          detalhes?: Json | null
+          disponivel?: boolean | null
+          id?: never
+          imagem?: string | null
+          imagem_base64?: string | null
+          nome: string
+          preco?: number | null
+          preco_promocional?: number | null
+          updated_at?: string
+        }
+        Update: {
+          categoria_id?: number | null
+          created_at?: string
+          descricao?: string | null
+          detalhes?: Json | null
+          disponivel?: boolean | null
+          id?: never
+          imagem?: string | null
+          imagem_base64?: string | null
+          nome?: string
+          preco?: number | null
+          preco_promocional?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalogo_itens_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "catalogo_categorias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           company_id: string
@@ -211,6 +356,153 @@ export type Database = {
         }
         Relationships: []
       }
+      expenses: {
+        Row: {
+          category: string
+          created_at: string
+          date: string
+          description: string
+          id: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          date: string
+          description: string
+          id?: string
+          user_id: string
+          value: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          date?: string
+          description?: string
+          id?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: []
+      }
+      gtas: {
+        Row: {
+          animals: Json[]
+          created_at: string
+          departureDate: string
+          destinationInfo: Json
+          feeValue: number
+          id: string
+          issueDate: string
+          linkedInvoiceNumber: string
+          number: string
+          pdfUrl: string | null
+          producerInfo: Json
+          purpose: string
+          transportInfo: Json
+          user_id: string
+          vaccinationInfo: string | null
+        }
+        Insert: {
+          animals: Json[]
+          created_at?: string
+          departureDate: string
+          destinationInfo: Json
+          feeValue: number
+          id?: string
+          issueDate: string
+          linkedInvoiceNumber: string
+          number: string
+          pdfUrl?: string | null
+          producerInfo: Json
+          purpose: string
+          transportInfo: Json
+          user_id: string
+          vaccinationInfo?: string | null
+        }
+        Update: {
+          animals?: Json[]
+          created_at?: string
+          departureDate?: string
+          destinationInfo?: Json
+          feeValue?: number
+          id?: string
+          issueDate?: string
+          linkedInvoiceNumber?: string
+          number?: string
+          pdfUrl?: string | null
+          producerInfo?: Json
+          purpose?: string
+          transportInfo?: Json
+          user_id?: string
+          vaccinationInfo?: string | null
+        }
+        Relationships: []
+      }
+      invoices: {
+        Row: {
+          cfop: string
+          created_at: string
+          departureDateTime: string
+          id: string
+          issueDate: string
+          issuer: Json
+          items: Json[]
+          model: number
+          number: string
+          paymentMethod: string
+          pdfUrl: string | null
+          purpose: string
+          recipient: Json
+          status: string
+          totalValue: number
+          transport: Json
+          user_id: string
+          xmlUrl: string | null
+        }
+        Insert: {
+          cfop: string
+          created_at?: string
+          departureDateTime: string
+          id?: string
+          issueDate: string
+          issuer: Json
+          items: Json[]
+          model: number
+          number: string
+          paymentMethod: string
+          pdfUrl?: string | null
+          purpose: string
+          recipient: Json
+          status: string
+          totalValue: number
+          transport: Json
+          user_id: string
+          xmlUrl?: string | null
+        }
+        Update: {
+          cfop?: string
+          created_at?: string
+          departureDateTime?: string
+          id?: string
+          issueDate?: string
+          issuer?: Json
+          items?: Json[]
+          model?: number
+          number?: string
+          paymentMethod?: string
+          pdfUrl?: string | null
+          purpose?: string
+          recipient?: Json
+          status?: string
+          totalValue?: number
+          transport?: Json
+          user_id?: string
+          xmlUrl?: string | null
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string | null
@@ -325,6 +617,81 @@ export type Database = {
           },
         ]
       }
+      people: {
+        Row: {
+          address: Json
+          contact: string
+          created_at: string
+          document: string
+          id: string
+          name: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          address: Json
+          contact: string
+          created_at?: string
+          document: string
+          id?: string
+          name: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          address?: Json
+          contact?: string
+          created_at?: string
+          document?: string
+          id?: string
+          name?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      producers: {
+        Row: {
+          address: Json
+          certificateBase64: string | null
+          certificateFileName: string | null
+          certificatePassword: string | null
+          created_at: string
+          document: string
+          id: string
+          name: string
+          stateRegistration: string
+          taxRegime: string
+          user_id: string
+        }
+        Insert: {
+          address: Json
+          certificateBase64?: string | null
+          certificateFileName?: string | null
+          certificatePassword?: string | null
+          created_at?: string
+          document: string
+          id?: string
+          name: string
+          stateRegistration: string
+          taxRegime: string
+          user_id: string
+        }
+        Update: {
+          address?: Json
+          certificateBase64?: string | null
+          certificateFileName?: string | null
+          certificatePassword?: string | null
+          created_at?: string
+          document?: string
+          id?: string
+          name?: string
+          stateRegistration?: string
+          taxRegime?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           available: boolean | null
@@ -422,6 +789,74 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      revenues: {
+        Row: {
+          created_at: string
+          date: string
+          description: string
+          id: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          description: string
+          id?: string
+          user_id: string
+          value: number
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          description?: string
+          id?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: []
+      }
+      sales: {
+        Row: {
+          animalIds: string[]
+          buyerId: string | null
+          created_at: string
+          date: string
+          id: string
+          invoiceId: string | null
+          totalValue: number
+          user_id: string
+        }
+        Insert: {
+          animalIds: string[]
+          buyerId?: string | null
+          created_at?: string
+          date: string
+          id?: string
+          invoiceId?: string | null
+          totalValue: number
+          user_id: string
+        }
+        Update: {
+          animalIds?: string[]
+          buyerId?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          invoiceId?: string | null
+          totalValue?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_buyerId_fkey"
+            columns: ["buyerId"]
+            isOneToOne: false
+            referencedRelation: "people"
             referencedColumns: ["id"]
           },
         ]
@@ -751,12 +1186,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_current_user_company_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      get_current_user_company_id: { Args: never; Returns: string }
       restore_soft_deleted: {
-        Args: { table_name: string; record_id: string }
+        Args: { record_id: string; table_name: string }
         Returns: undefined
       }
     }
@@ -775,21 +1207,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -807,14 +1243,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -830,14 +1268,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -853,14 +1293,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -868,14 +1310,16 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
